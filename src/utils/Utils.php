@@ -576,7 +576,7 @@ class Utils{
 	}
 
 	public static function readInt($str){
-		if(strlen($str) <= 0) return; 
+		if(strlen($str) < 4) return 0; 
 		
 		return @unpack("N", $str)[1] << 32 >> 32; //php has no signed long unpack
 	}
@@ -589,7 +589,8 @@ class Utils{
 	}
 
 	public static function readFloat($str){
-		list(, $value) = unpack("G", $str);
+		if(strlen($str) < 4) return 0;
+		list(, $value) = @unpack("G", $str);
 		return $value;
 	}
 
@@ -611,6 +612,7 @@ class Utils{
 	}
 
 	public static function readLDouble($str){
+		if(strlen($str) < 8) return 0; 
 		list(, $value) = @unpack("e", $str);
 		return $value;
 	}
@@ -620,6 +622,7 @@ class Utils{
 	}
 
 	public static function readLLong($str){
+		if(strlen($str) < 8) return 0; 
 		return unpack("P", $str)[1];
 	}
 
