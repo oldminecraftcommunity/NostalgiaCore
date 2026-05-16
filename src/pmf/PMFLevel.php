@@ -100,7 +100,13 @@ class PMFLevel extends PMF{
 			$this->write(Utils::writeShort(0));
 			$X = $Z = null;
 			$this->getXZ($index, $X, $Z);
-			@file_put_contents($this->getChunkPath($X, $Z), gzdeflate("", PMF_LEVEL_DEFLATE_LEVEL));
+			
+			$chunk = @gzopen($this->getChunkPath($X, $Z), "wb" . PMF_LEVEL_DEFLATE_LEVEL);
+			gzwrite($chunk, chr(self::CHUNK_VERSION));
+			gzwrite($chunk, Utils::writeShort(0)); //heightmap
+			gzwrite($chunk, "\x00"); //haslight
+			gzwrite($chunk, "\x00"); //ticking
+			gzclose($chunk);
 		}
 		if(!file_exists(dirname($this->file) . "/entities.yml")){
 			$entities = new Config(dirname($this->file) . "/entities.yml", CONFIG_YAML);
@@ -183,6 +189,7 @@ class PMFLevel extends PMF{
 		$index = self::getIndex($X, $Z);
 		$o = ord($this->hasLight[$index]);
 		$this->hasLight[$index] = chr($o | 1);
+		$this->chunkChange[$index][-1] = true;
 		return true;
 	}
 	public function markHasSkylight($X, $Z){
@@ -190,6 +197,7 @@ class PMFLevel extends PMF{
 		$index = self::getIndex($X, $Z);
 		$o = ord($this->hasLight[$index]);
 		$this->hasLight[$index] = chr($o | 2);
+		$this->chunkChange[$index][-1] = true;
 		return true;
 	}
 	
@@ -541,7 +549,7 @@ class PMFLevel extends PMF{
 		if($this->isChunkLoaded($X, $Z) === false){
 			$this->loadChunk($X, $Z);
 		}
-		if(strlen($data) !== 8192){
+		if(strlen($data) !== 10240){
 			return false;
 		}
 		$index = self::getIndex($X, $Z);
