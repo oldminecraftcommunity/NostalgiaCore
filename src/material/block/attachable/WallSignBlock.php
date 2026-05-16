@@ -23,7 +23,7 @@ class WallSignBlock extends SignPostBlock{
 			default => WALL_SIGN
 		};
 			
-		if(!StaticBlock::getIsSolid($attached) && $attached != SIGN_POST && $attached != WALL_SIGN){
+		if(!StaticBlock::getIsSolid($attached) && $attached != SIGN_POST && $attached != WALL_SIGN && $attached != GLASS_PANE && $attached != IRON_BARS && $attached != STONE_WALL){
 			$level->fastSetBlockUpdate($x, $y, $z, 0, 0, true, true);
 			(ServerAPI::request())->api->entity->drop(new Position($x + 0.5, $y + 0.5, $z + 0.5, $level), BlockAPI::getItem(SIGN, 0, 1));
 		}

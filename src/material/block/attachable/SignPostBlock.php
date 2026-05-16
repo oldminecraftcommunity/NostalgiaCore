@@ -21,7 +21,7 @@ class SignPostBlock extends TransparentBlock{
 	}
 	
 	public function place(Item $item, Player $player, Block $block, Block $target, $face, $fx, $fy, $fz){
-		if(($target->isSolid || $target->getID() === SIGN_POST || $target->getID() === WALL_SIGN) && $face !== 0){
+		if(($target->isSolid || $target->getID() === SIGN_POST || $target->getID() === WALL_SIGN || $target->getID() === GLASS_PANE || $target->getID() === IRON_BARS || $target->getID() === STONE_WALL) && $face !== 0){
 			if(!isset(self::$faces[$face])){
 				$this->meta = floor((($player->entity->yaw + 180) * 16 / 360) + 0.5) & 0x0F;
 				$this->level->setBlock($block, BlockAPI::get(SIGN_POST, $this->meta), true, false, true);

@@ -39,7 +39,7 @@ class BucketItem extends Item{
 				return true;
 			}
 		}elseif($this->meta === WATER){
-			if($block->getID() === AIR || $block instanceof LiquidBlock){
+			if($block->getID() === AIR || $block->getID() === TORCH || $block instanceof LiquidBlock){
 				$water = new WaterBlock();
 				$level->setBlock($block, $water, true, false, true);
 				//$water->place($this, $player, $block, $target, $face, $fx, $fy, $fz);
@@ -54,7 +54,7 @@ class BucketItem extends Item{
 				return true;
 			}
 		}elseif($this->meta === LAVA){
-			if($block->getID() === AIR || $block instanceof LiquidBlock){
+			if($block->getID() === AIR || $block->getID() === TORCH || $block instanceof LiquidBlock){
 				$lava = new LavaBlock();
 				$level->setBlock($block, $lava, true, false, true);
 				//$lava->place(clone $this, $player, $block, $target, $face, $fx, $fy, $fz);
