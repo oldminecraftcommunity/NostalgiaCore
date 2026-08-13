@@ -1469,7 +1469,7 @@ class Player{
 			}
 		}
 
-		if(!$this->isWorkBench && $this->PROTOCOL <= ProtocolInfo6::CURRENT_PROTOCOL_6 && $type === STONE_BRICK){
+		if($this->PROTOCOL <= ProtocolInfo6::CURRENT_PROTOCOL_6 && $type === STONE_BRICK){
 			$this->toCraft = [];
 			$this->craftingItems = [];
 			return false;

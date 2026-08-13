@@ -1629,14 +1629,14 @@ class Entity extends Position
 		if($this->isPlayer()){
 			$v2 = (int)($dmg / 4);
 			if($v2 < 1) $v2 = 1;
-			
+
 			foreach($this->player->armor as $slot => $part){
 				$part->hurtAndBreak($v2, $this->player, helditem: false);
 				if($part->count <= 0) $this->player->setArmor($slot, BlockAPI::getItem(0, 0, 0), send: false);
 			}
 			if($this->player->getProtocol() < ProtocolInfo12::CURRENT_PROTOCOL_12 && $this->player->getProtocol() > ProtocolInfo8::CURRENT_PROTOCOL_8){
 				$pk = new HurtArmorPacket();
-				$pk->health = $v2; //TODO: Verify the real attack health for it
+				$pk->health = $v2;
 				$this->player->entityQueueDataPacket($pk);
 			}
 			$this->player->sendArmor();
@@ -1731,9 +1731,11 @@ class Entity extends Position
 						$pk->event = EntityEventPacket::ENTITY_DEAD;
 						$this->player->entityQueueDataPacket($pk);
 					} elseif (isset($this->player->isOre[DIAMOND_HELMET])) {
-						$pk = new HurtArmorPacket();
-						$pk->health = 900; //TODO Verify the real attack health for it
-						$this->player->entityQueueDataPacket($pk);
+						for($i = 0 ; $i < 19 ; $i++){
+							$pk = new HurtArmorPacket();
+							$pk->health = 127;
+							$this->player->entityQueueDataPacket($pk);
+						}
 					}
 				}
 				$this->player->isOre = [];
