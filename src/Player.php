@@ -826,8 +826,33 @@ class Player{
 
 		$this->inventory[$slot] = $item;
 
+		if($this->PROTOCOL >= ProtocolInfo9::CURRENT_PROTOCOL_9){
 		if($send === true){
 			$this->sendInventorySlot($slot);
+		}
+		}elseif($send && $item->getID() !== AIR){
+			$dropitem = $item;
+			if($item->getID() === $old->getID() && $item->getMetadata() === $old->getMetadata() && $item->count > $old->count){
+				$dropitem = BlockAPI::getItem($item->getID(), $item->getMetadata(), $item->count - $old->count);
+			}
+			$data = [
+				"x" => $this->entity->x,
+				"y" => $this->entity->y - 0.3 + $this->entity->height - 0.12,
+				"z" => $this->entity->z,
+				"level" => $this->level,
+				"speedX" => 0,
+				"speedY" => 0,
+				"speedZ" => 0,
+				"item" => $dropitem,
+				"itemID" => $dropitem->getID()
+			];
+			$e = $this->server->api->entity->add($this->level, ENTITY_ITEM, ENTITY_ITEM_TYPE, $data);
+			$e->spawn($this);
+			$pk = new TakeItemEntityPacket;
+			$pk->eid = $this->eid;
+			$pk->target = $e->eid;
+			$this->entityQueueDataPacket($pk);
+			$e->close();
 		}
 
 		if($addexpected){
@@ -1314,7 +1339,29 @@ class Player{
 					continue;
 				}
 				$item->count += $add;
+				if($this->PROTOCOL >= ProtocolInfo9::CURRENT_PROTOCOL_9){
 				if($send) $this->sendInventorySlot($s);
+				}elseif($send){
+					$dropitem = BlockAPI::getItem($type, $damage, $add);
+					$data = [
+						"x" => $this->entity->x,
+						"y" => $this->entity->y - 0.3 + $this->entity->height - 0.12,
+						"z" => $this->entity->z,
+						"level" => $this->level,
+						"speedX" => 0,
+						"speedY" => 0,
+						"speedZ" => 0,
+						"item" => $dropitem,
+						"itemID" => $dropitem->getID()
+					];
+					$e = $this->server->api->entity->add($this->level, ENTITY_ITEM, ENTITY_ITEM_TYPE, $data);
+					$e->spawn($this);
+					$pk = new TakeItemEntityPacket;
+					$pk->eid = $this->eid;
+					$pk->target = $e->eid;
+					$this->entityQueueDataPacket($pk);
+					$e->close();
+				}
 				if($addexpected) $this->addExpectedSetSlotPacket($s, $item->getID(), $item->getMetadata(), $item->count);
 
 				$count -= $add;
@@ -1327,7 +1374,29 @@ class Player{
 				$add = min($toadd->getMaxStackSize(), $count);
 				$this->inventory[$s] = BlockAPI::getItem($type, $damage, $add);
 
+				if($this->PROTOCOL >= ProtocolInfo9::CURRENT_PROTOCOL_9){
 				if($send) $this->sendInventorySlot($s);
+				}elseif($send){
+					$dropitem = BlockAPI::getItem($type, $damage, $add);
+					$data = [
+						"x" => $this->entity->x,
+						"y" => $this->entity->y - 0.3 + $this->entity->height - 0.12,
+						"z" => $this->entity->z,
+						"level" => $this->level,
+						"speedX" => 0,
+						"speedY" => 0,
+						"speedZ" => 0,
+						"item" => $dropitem,
+						"itemID" => $dropitem->getID()
+					];
+					$e = $this->server->api->entity->add($this->level, ENTITY_ITEM, ENTITY_ITEM_TYPE, $data);
+					$e->spawn($this);
+					$pk = new TakeItemEntityPacket;
+					$pk->eid = $this->eid;
+					$pk->target = $e->eid;
+					$this->entityQueueDataPacket($pk);
+					$e->close();
+				}
 
 				if($addexpected) $this->addExpectedSetSlotPacket($s, $type, $damage, $add);
 				$count -= $add;
@@ -3972,7 +4041,7 @@ class Player{
 	 * Dont use this if the protocol version >= MCPE 0.7
 	 * @return Boolean
 	 */
-	public function setCurrentSlot(Item $heldItem){
+	private function setCurrentSlot(Item $heldItem){
 		return $this->slot = $this->hasItem($heldItem->getID(), $heldItem->getMetadata()) ?: 0;
 	}
 	
@@ -4153,7 +4222,7 @@ class Player{
 		return $countedItem;
 	}
 
-	public function getAccurateItemSlot($type, $damage, $count){
+	private function getAccurateItemSlot($type, $damage, $count){
 		foreach($this->inventory as $s => $item){
 			if($item->getID() === $type && ($item->getMetadata() === $damage || $damage === false) && $item->count === $count){
 				return $s;
