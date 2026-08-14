@@ -175,4 +175,8 @@ define("NETHER_REACTOR", 247);
 define("INFO_UPDATE", 248);
 define("INFO_UPDATE2", 249);
 
+//0.2 - 0.7: 253 & 254
+define("GRASS_CARRIED", 253);
+define("LEAVES_CARRIED", 254);
+
 define("RESERVED6", 255);

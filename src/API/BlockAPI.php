@@ -860,6 +860,12 @@ class BlockAPI{
 
 	public static function convertHighItemIdsToOldItemIds(int $protocolId, int $itemId, int $metaData = 0) : int{ //TODO Id metadata
         if ($protocolId >= ProtocolInfo12::CURRENT_PROTOCOL_11) {
+			if($itemId === LEAVES_CARRIED || $itemId === GRASS_CARRIED){
+				return match ($itemId){
+					LEAVES_CARRIED => LEAVES,
+					GRASS_CARRIED => GRASS,
+				};
+			}
             return $itemId;
         }
 
