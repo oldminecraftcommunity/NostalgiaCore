@@ -15,8 +15,19 @@ class Level{
 	 * @var Entity[]
 	 */
 	public $entityList;
-	
+	/**
+	 * An array with all of the tileentities in this world
+	 * @var Tile[]
+	 */
+	public $tileEntityList;
+	/**
+	 * @var Entity[]
+	 */
 	public $entityListPositioned = [];
+	/**
+	 * @var Tile[]
+	 */
+	public $tileEntityListPositioned = [];
 	public $entitiesInLove = [];
 	
 	/**
@@ -59,6 +70,7 @@ class Level{
 		$this->level = $level;
 		$this->level->level = $this;
 		$this->entityList = [];
+		$this->tileEntityList = [];
 		$this->entities = $entities;
 		$this->tiles = $tiles;
 		$this->blockUpdates = $blockUpdates;

@@ -467,7 +467,7 @@ class PMFLevel extends PMF{
 		if($compatver != self::TYPE_OLD){
 			$ver = ord(gzread($chunk, 1));
 			if($ver != self::CHUNK_VERSION){
-				ConsoleAPI::error("Failed to load chunk $X $Z: chunk version ($ver) doesnt match current (".self::CHUNK_VERSION.")");
+				ConsoleAPI::error("Failed to load chunk $X $Z: chunk version ($ver) doesn't match current (".self::CHUNK_VERSION.")");
 				@gzclose($chunk);
 				return false;
 			}
