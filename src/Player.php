@@ -881,10 +881,19 @@ class Player{
 		}
 		if($player instanceof Player){
 			if($player === $this){
+				if($this->PROTOCOL < ProtocolInfo12::CURRENT_PROTOCOL_12 && !($this->armor[0]->getID() & $this->armor[1]->getID() & $this->armor[2]->getID() & $this->armor[3]->getID()) && isset($this->isOre[DIAMOND_HELMET])){
+					for($i = 0 ; $i < 19 ; $i++){
+						$pk = new HurtArmorPacket();
+						$pk->health = 127;
+						$this->entityQueueDataPacket($pk);
+					}
+					unset($this->isOre[DIAMOND_HELMET]);
+				}else{
 				$pk = new ContainerSetContentPacket;
 				$pk->windowid = 0x78; //Armor window id
 				$pk->slots = $this->armor;
 				$this->entityQueueDataPacket($pk);
+				}
 			}else{
 				$pk = new PlayerArmorEquipmentPacket;
 				$pk->eid = $this->eid;
