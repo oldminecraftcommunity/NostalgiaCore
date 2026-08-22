@@ -870,9 +870,15 @@ class BlockAPI{
         }
 
         $idMap = [ //default for protocol < 12
+			BUCKET => BONE,
             RAIL => AIR,
             POWERED_RAIL => AIR,
             LIT_PUMPKIN => MELON_BLOCK,
+			MUSHROOM_STEW => BOWL,
+			HAY_BALE => MELON_BLOCK,
+			CARROT => STEAK,
+			SADDLE => STEAK,
+			CAKE => SUGARCANE,
             PUMPKIN_SEEDS => MELON_SEEDS,
             PUMPKIN_PIE => BREAD,
             BEETROOT => BREAD,
