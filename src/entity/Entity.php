@@ -1518,7 +1518,7 @@ class Entity extends Position
 			$this->knockBack($d, $d1);
 			if($this->isPlayer()){
 				$pk = new SetEntityMotionPacket();
-				$pk->eid = 0;
+				$pk->eid = $this->eid;
 				$pk->speedX = $this->speedX;
 				$pk->speedY = $this->speedY;
 				$pk->speedZ = $this->speedZ;
