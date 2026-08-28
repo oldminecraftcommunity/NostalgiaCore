@@ -2,54 +2,47 @@
 
 # NostalgiaCore
 
-NostalgiaCore is a fork of Legacy PocketMine-MP 1.3.12, which fixes bugs of Legacy PocketMine-MP, and adds new content
+NostalgiaCore is a fork of Legacy PocketMine-MP 1.3.12 with bug improvements, new content and features!
 
-Supported MCPE versions: 0.8.0, 0.8.1 (maybe 0.8.2)
+NostalgiaCore targets MCPE 0.8.0 and 0.8.1 (also 0.8.2 might be supported)
 
-(Special thx to GullCraft Network and DartMiner43)
-
-<h2> Why should you use NostalgiaCore to run a Minecraft Pocket Edition 0.8.1 server?</h2>
-
+## Features over PocketMine
 • PHP 8 Support, PHAR plugins
-
-• Crafting system was rewritten to hopefully have less problems
-
-• Items are dropping normally.
-
-• Player hotbar is saved.
-
-• Working Nether Reactor.
-
+• Rewritten crafting system 
+• Working item drops
+• Player inventory saving
+• Working Nether Reactor
 • Mob AI
-
-• Dupes, that were in PocketMine by mistake are fixed.
-
+• Fixed unintended dupe bugs
 • Extra options (like in-game messages to discord)
+• Fixed Vector2
 
-• Vector2 is fixed.
+...and more!
 
-...and etc.
+## Download & Installation
+1. Download the [PHP binaries](#php-binaries) below
+2. Follow the instructions written in the [latest Release](https://github.com/oldminecraftcommunity/NostalgiaCore/releases/)
 
-<h3> Download Stable NostalgiaCore</h3>
-
-https://github.com/oldminecraftcommunity/NostalgiaCore/releases/
-
-<h3> PHP binaries download</h3>
+### PHP Binaries
 
 * https://github.com/pmmp/PHP-Binaries/releases/tag/pm4-php-8.0-latest PHP8
 * https://github.com/DaisukeDaisuke/AndroidPHP/releases/tag/8.0.28 PHP8 for ARMv8
-<h3> How to use auto-restart?</h3>
 
-Simply start your server using ./start.sh -l
+### How to use auto-restart?
 
-<h3> Our discord server</h3>
+Simply start your server using `./start.sh -l`
 
-https://discord.gg/uSHEWe6NC3
+## Community
+* Join our [Discord server](https://discord.gg/uSHEWe6NC3)!
 
-# Want to contribute?
+### Want to contribute?
 * Check the [Contributing Guidelines](CONTRIBUTING.md)
 
-# Third-party Libraries/Protocols Used
+## Credits
+
+(Special thx to GullCraft Network and DartMiner43)
+
+### Third-party Libraries/Protocols Used
 * __[PHP Sockets](http://php.net/manual/en/book.sockets.php)__
 * __[PHP SQLite3](http://php.net/manual/en/book.sqlite3.php)__
 * __[PHP BCMath](http://php.net/manual/en/book.bc.php)__
