@@ -1,5 +1,5 @@
 <?php
-define("EMPTY_MINI_CHUNK", str_repeat("\x00", 8192));
+define("EMPTY_MINI_CHUNK", str_repeat("\x00", 10240));
 define("EMPTY_16x16_ARR", array_fill(0, 256, 0));
 class VanillaGenerator implements LevelGenerator
 {
@@ -159,7 +159,7 @@ class VanillaGenerator implements LevelGenerator
 		for($Y = 0; $Y < 8; ++$Y){
 			$index = ($chunkZ << 4) + $chunkX;
 			$this->level->level->chunks[$index][$Y] = $chunkz[$Y];
-			$this->level->level->chunkChange[$index][$Y] = 8192;
+			$this->level->level->chunkChange[$index][$Y] = 10240;
 			$this->level->level->locationTable[$index][0] |= 1 << $Y; //TODO mv out of loop
 		}
 		$this->level->level->chunkChange[$index][-1] = true;
@@ -191,7 +191,7 @@ class VanillaGenerator implements LevelGenerator
 				for($Y = 7; $Y >= 0; --$Y){
 					for($cY = 15; $cY >= 0; --$cY){
 						$blockY = $Y*16 + $cY;
-						$blockID = ord($chunkz[$Y][$cY + ($blockX << 5) + ($blockZ << 9)]);
+						$blockID = ord($chunkz[$Y][$cY + $blockX*40 + $blockZ*640]);
 						if($blockID > 0) {
 							$heightmapCPtr[$blockX + ($blockZ * 16)] = $blockY + 1 ;
 							break 2;
@@ -215,6 +215,7 @@ class VanillaGenerator implements LevelGenerator
 		$this->sandNoises = $this->beachNoise->generateNoiseOctaves($chunkX * 16, $chunkZ * 16, 0, 16, 16, 1, 0.03125, 0.03125, 1);
 		$this->gravelNoises = $this->beachNoise->generateNoiseOctaves($chunkX * 16, 109.01, $chunkZ * 16, 16, 1, 16, 0.03125, 1, 0.03125);
 		$this->surfaceDepthNoises = $this->surfaceDepthNoise->generateNoiseOctaves($chunkX * 16, $chunkZ * 16, 0, 16, 16, 1, 0.0625, 0.0625, 0.0625);
+		//TODO blockZ is actually blockX here?
 		for($blockX = 0; $blockX < 16; ++$blockX){
 			for($blockZ = 0; $blockZ < 16; ++$blockZ){
 				/** @var Biome $biome **/
@@ -227,9 +228,9 @@ class VanillaGenerator implements LevelGenerator
 				$b2 = $biome->fillerBlock;
 				for($blockY = 127; $blockY >= 0; --$blockY){
 					if($blockY <= $this->rand->nextInt(5)){
-						$chunks[$blockY >> 4][($blockY & 0xf) + ($blockZ << 5) + ($blockX << 9)] = "\x07";
+						$chunks[$blockY >> 4][($blockY & 0xf) + $blockZ*40 + $blockX*640] = "\x07";
 					}else{
-						$b3 = ord($chunks[$blockY >> 4][($blockY & 0xf) + ($blockZ << 5) + ($blockX << 9)]);
+						$b3 = ord($chunks[$blockY >> 4][($blockY & 0xf) + $blockZ*40 + $blockX*640]);
 						if($b3 == 0){
 							$i = -1;
 						}elseif($b3 == STONE){
@@ -253,10 +254,10 @@ class VanillaGenerator implements LevelGenerator
 								
 								$b = $blockY < 64 && $b == 0 ? STILL_WATER : $b;
 								$i = $nextFloat;
-								$chunks[$blockY >> 4][($blockY & 0xf) + ($blockZ << 5) + ($blockX << 9)] = $blockY >= 63 ? chr($b) : chr($b2);
+								$chunks[$blockY >> 4][($blockY & 0xf) + ($blockZ*40) + ($blockX*640)] = $blockY >= 63 ? chr($b) : chr($b2);
 							}elseif($i > 0){
 								--$i;
-								$chunks[$blockY >> 4][($blockY & 0xf) + ($blockZ << 5) + ($blockX << 9)] = chr($b2);
+								$chunks[$blockY >> 4][($blockY & 0xf) + ($blockZ*40) + ($blockX*640)] = chr($b2);
 								if($i == 0 && $b2 == SAND){
 									$i = $this->rand->nextInt(4);
 									$b2 = SANDSTONE;
@@ -305,7 +306,7 @@ class VanillaGenerator implements LevelGenerator
 								$fx = ($unkXX + ($unkX * 4));
 								$fy = (($unkY * 8) + $unkYY);
 								$fz = ($unkZZ + ($unkZ * 4));
-								$chunks[$fy >> 4][($fy & 0xf) + ($fx << 5) + ($fz << 9)] = chr($i3);
+								$chunks[$fy >> 4][($fy & 0xf) + $fx*40 + $fz*640] = chr($i3);
 								$f13 += $f14;
 							}
 							$f9 += $f11;

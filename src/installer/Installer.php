@@ -88,6 +88,7 @@ LICENSE;
 			$config->set("max-players", (int) $this->getInput(self::DEFAULT_PLAYERS));
 			echo "[*] ".$this->lang->spawn_protection_info."\n";
 			echo "[?] ".$this->lang->spawn_protection." (Y/n): ";
+			//TODO remove spawn prot from here
 			if(strtolower($this->getInput("y")) == "n"){
 				$config->set("spawn-protection", -1);
 			}else{

@@ -253,6 +253,12 @@ abstract class Block extends Position{
 		$this->boundingBox = new AxisAlignedBB($this->x, $this->y, $this->z, $this->x + 1, $this->y + 1, $this->z + 1);
 	}
 	
+	abstract function onBreak(Item $item, Player $player);
+	
+	abstract function place(Item $item, Player $player, Block $block, Block $target, $face, $fx, $fy, $fz);
+	
+	abstract function onActivate(Item $item, Player $player);
+	
 	final public function getHardness(){
 		return ($this->hardness);
 	}
@@ -325,12 +331,6 @@ abstract class Block extends Position{
 	public function isBreakable(Item $item, Player $player){
 		return $this->hardness >= 0;
 	}
-	
-	abstract function onBreak(Item $item, Player $player);
-	
-	abstract function place(Item $item, Player $player, Block $block, Block $target, $face, $fx, $fy, $fz);
-	
-	abstract function onActivate(Item $item, Player $player);
 }
 
 /***REM_START***/

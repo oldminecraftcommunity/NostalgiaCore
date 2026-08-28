@@ -13,6 +13,28 @@ class LevelAPI{
 	}
 
 	public function init(){
+		//TODO per-level difficulty, interact, random-ticking
+		$this->registerProperty("difficulty", 2, desc: "WIP for now, Difficulty level. 0 - Peaceful, 1 - Easy, 2 - Normal, 3 - Hard");
+		$this->registerProperty("mobs-amount", 50, desc: "Max amount of mobs that can be spawned.");
+		$this->registerProperty("spawn-animals", true, desc: "Spawn animals.");
+		$this->registerProperty("spawn-monsters", true, desc: "Spawn monsters.");
+		$this->registerProperty("pvp", true, desc: "Enable or disable pvp in the level");
+		$this->registerProperty("random-ticking", "subchunk", desc: [
+			"WIP", "Affects how random ticking works. Available modes:", 
+			"subchunk - tick 16x16x16 areas", 
+			"fullchunk - tick 16x16x128 areas", 
+			"vanilla - tick 256x256x128 area"
+		]);
+		$this->registerProperty("interact", true, desc: "WIP, Enable or disable ability to interact with the level");
+		$this->registerProperty("spawn-protection", 16, desc: "Prevent player interactions <n> blocks around the spawn.");
+		
+		
+		$this->server->api->console->register("setworldprop", "[world] <property> <value>", [$this, "commandHandler"]);
+		$this->server->api->console->register("getworldprop", "[world] <property>", [$this, "commandHandler"]);
+		$this->server->api->console->register("reloadworldprops", "[world]", [$this, "commandHandler"]);
+		$this->server->api->console->register("createworld", "<worldname> [type] [seed]", [$this, "commandHandler"]);
+		$this->server->api->console->register("loadworld", "<worldname>", [$this, "commandHandler"]);
+		
 		$this->server->api->console->register("seed", "[world]", [$this, "commandHandler"]);
 		$this->server->api->console->register("save-all", "", [$this, "commandHandler"]);
 		$this->server->api->console->register("save-on", "", [$this, "commandHandler"]);
@@ -25,6 +47,49 @@ class LevelAPI{
 			$this->loadLevel($this->default);
 		}
 		$this->server->spawn = $this->getDefault()->getSafeSpawn();
+	}
+	
+	
+	private $defaultLevelProperties = [];
+	private $levelPropsInfo = [];
+	
+	/**
+	 * Registers a level property
+	 * 
+	 * @param string $name - property name
+	 * @param mixed $defaultValue - default property value
+	 * @param array[string]|string|boolean $desc=false - property description(false=none, string=single line, array of strings=multiline)
+	 * @return false if the property exists, true if success
+	 */
+	public function registerProperty(string $name, $defaultValue, $desc = false){
+		if(isset($this->defaultLevelProperties[$name])) return false;
+		
+		$this->defaultLevelProperties[$name] = $defaultValue;
+		if(is_array($desc) || is_string($desc)) $this->levelPropsInfo[$name] = $desc;
+		return true;
+	}
+	
+	/**
+	 * Gets a default value for property
+	 * @param string $name - property name
+	 * @param mixed $fail=false - return value if the property doesn't exist
+	 * @return string|mixed
+	 */
+	public function getDefaultProperty(string $name, $fail=false){
+		return $this->defaultLevelProperties[$name] ?? $fail;
+	}
+	
+	/**
+	 * Loads a properties for a level
+	 * @param Level $level
+	 */
+	public function loadLevelProperties(Level $level){
+		$propsPath = DATA_PATH . "worlds/{$level->getName()}/properties.yml";
+		
+		$level->levelProperties = new Config($propsPath, CONFIG_YAML, $this->defaultLevelProperties, comments: $this->levelPropsInfo);
+		foreach($level->levelProperties->getAll() as $k => $v){
+			$level->setProperty($k, $v);
+		}
 	}
 
 	public function loadLevel($name){
@@ -50,14 +115,16 @@ class LevelAPI{
 			}
 		}
 		
-		
 		$entities = new Config($path . "entities.yml", CONFIG_YAML);
 		if(file_exists($path . "tileEntities.yml")){
 			@rename($path . "tileEntities.yml", $path . "tiles.yml");
 		}
 		$tiles = new Config($path . "tiles.yml", CONFIG_YAML);
 		$blockUpdates = new Config($path . "bupdates.yml", CONFIG_YAML);
-		$this->levels[$name] = new Level($level, $entities, $tiles, $blockUpdates, $name);
+		
+		$this->levels[$name] = $lvl = new Level($level, $entities, $tiles, $blockUpdates, $name);
+		$this->loadLevelProperties($lvl);
+		
 		foreach($entities->getAll() as $entity){
 			if(!isset($entity["id"])){
 				break;
@@ -82,15 +149,12 @@ class LevelAPI{
 				]);
 			}elseif($entity["id"] === FALLING_SAND){
 				$e = $this->server->api->entity->add($this->levels[$name], ENTITY_FALLING, $entity["id"], $entity);
-				//$e->setPosition(new Vector3($entity["Pos"][0], $entity["Pos"][1], $entity["Pos"][2]), $entity["Rotation"][0], $entity["Rotation"][1]);
 				$e->setHealth($entity["Health"]);
 			}elseif(Utils::getEntityTypeByID($entity["id"]) === ENTITY_OBJECT){ //Object
 				$e = $this->server->api->entity->add($this->levels[$name], ENTITY_OBJECT, $entity["id"], $entity);
-				//$e->setPosition(new Vector3($entity["Pos"][0], $entity["Pos"][1], $entity["Pos"][2]), $entity["Rotation"][0], $entity["Rotation"][1]);
 				$e->setHealth(1);
 			}else{
 				$e = $this->server->api->entity->add($this->levels[$name], ENTITY_MOB, $entity["id"], $entity);
-				//$e->setPosition(new Vector3($entity["Pos"][0], $entity["Pos"][1], $entity["Pos"][2]), $entity["Rotation"][0], $entity["Rotation"][1]);
 				$e->setHealth($entity["Health"]);
 			}
 		}
@@ -166,6 +230,21 @@ class LevelAPI{
 	public function commandHandler($cmd, $params, $issuer, $alias){
 		$output = "";
 		switch($cmd){
+			case "setworldprop":
+				
+				return "WIP";
+			case "getworldprop":
+				
+				return "WIP";
+			case "reloadworldprops":
+				
+				return "WIP";
+			case "createworld":
+				return "WIP";
+			case "loadworld":
+				
+				return "WIP";
+				
 			case "setwspawn":
 				if(!($issuer instanceof Player)){
 					return ("Please run this command in-game. ");

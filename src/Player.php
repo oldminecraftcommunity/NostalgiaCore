@@ -882,15 +882,9 @@ class Player{
 		$pk->data = $this->level->getOrderedChunk($X, $Z, $Yndex);
 		$cnt = $this->blockQueueDataPacket($pk);
 		$this->chunkDataSent["$X:$Z"] = true;
-		
-		$tiles = $this->server->query("SELECT ID FROM tiles WHERE spawnable = 1 AND level = '{$this->level->getName()}' AND x >= $minX AND x <= $maxX AND z >= $minZ AND z <= $maxZ;");
-		$this->lastChunk = false;
-		if($tiles !== false and $tiles !== true){
-			while(($tile = $tiles->fetchArray(SQLITE3_ASSOC)) !== false){
-				$tile = $this->server->api->tile->getByID($tile["ID"]);
-				if($tile instanceof Tile){
-					$tile->spawn($this);
-				}
+		foreach($this->level->tileEntityListPositioned["$X $Z"] ?? [] as $tile){
+			if($tile instanceof Tile){
+				$tile->spawn($this);
 			}
 		}
 		
@@ -913,20 +907,14 @@ class Player{
 	}
 	
 	public function onChunkReceived($blockX, $blockZ){
-		$minX = $blockX;
-		$maxX = $blockX + 15;
-		$minZ = $blockZ;
-		$maxZ = $blockZ + 15;
-		$tiles = $this->server->query("SELECT ID, x, y, z FROM tiles WHERE level = '{$this->level->getName()}' AND x >= $minX AND x <= $maxX AND z >= $minZ AND z <= $maxZ;");
-		$this->lastChunk = false;
-		if($tiles !== false and $tiles !== true){
-			while(($tile = $tiles->fetchArray(SQLITE3_ASSOC)) !== false){
-				$tile = $this->server->api->tile->getByID($tile["ID"]);
-				if($tile instanceof Tile){
-					$tile->spawn($this);
-				}
+		$blockX >>= 4;
+		$blockZ >>= 4;
+		foreach($this->level->tileEntityListPositioned["$blockX $blockZ"] ?? [] as $tile){
+			if($tile instanceof Tile){
+				$tile->spawn($this);
 			}
 		}
+		$this->lastChunk = false;
 	}
 	
 	public function getNextChunk($world){
@@ -3276,7 +3264,6 @@ class Player{
 						if($d["id"] !== TILE_SIGN){
 							$t->spawn($this);
 						}else{
-							
 							$t->setText($d["Text1"], $d["Text2"], $d["Text3"], $d["Text4"]);
 						}
 					}

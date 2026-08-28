@@ -14,10 +14,13 @@ class TrapdoorBlock extends TransparentBlock{
 		$this->breakTime = 3;
 		$this->material = Material::$wood;
 	}
-
-	public function canAttachTo(Block $target){
-		$id = $target->getID();
-		return $id === SLAB || $id === GLOWSTONE || $id === SLAB || $id === WOOD_SLAB || (!$target->isTransparent || $target instanceof StairBlock);
+	
+	public static function attachesTo($id){
+		if($id <= 0) return false;
+		
+		//check for non existent tiles is here - not needed?
+		//image using tile->getRenderShape() == 10 to check is stairs </3
+		return StaticBlock::getMaterial($id)->isSolidBlocking() && StaticBlock::getIsCubeShaped($id) || $id == GLOWSTONE || $id == SLAB || $id == WOODEN_SLAB || (StaticBlock::getBlock($id) instanceof StairBlock);
 	}
 	
 	public static function isOpen($meta){
@@ -59,18 +62,29 @@ class TrapdoorBlock extends TransparentBlock{
 		}
 	}
 	
+	
+	
 	public function place(Item $item, Player $player, Block $block, Block $target, $face, $fx, $fy, $fz){
-			if(($this->canAttachTo($target)) and $face !== 0 and $face !== 1){
-				$faces = array(
-					2 => 0,
-					3 => 1,
-					4 => 2,
-					5 => 3,
-				);
-				$this->meta = $faces[$face] & 0x03;
-				$this->level->setBlock($block, $this, true, false, true);
-				return true;
-			}
+		if($face == 0 || $face == 1) return false;
+		$level = $block->level;
+		$xx = $block->x;
+		$y = $block->y;
+		$zz = $block->z;
+		if($face == 2) ++$zz;
+		if($face == 3) --$zz;
+		if($face == 4) ++$xx;
+		if($face == 5) --$xx;
+		if(static::attachesTo($level->level->getBlockID($xx, $y, $zz))){
+			$this->meta = match($face){
+				3 => 1,
+				4 => 2,
+				5 => 3,
+				default => 0
+			};
+			$this->level->setBlock($block, $this, true, false, true);
+			return true;
+		}
+		return false;
 	}
 	public function getDrops(Item $item, Player $player){
 		return array(
@@ -96,5 +110,16 @@ class TrapdoorBlock extends TransparentBlock{
 		$this->meta ^= 0x04;
 		$this->level->setBlock($this, $this, true, false, true);
 		return true;
+	}
+	
+	
+	/**
+	 * @deprecated use TrapdoorBlock::attachesTo($target->getID());
+	 * @param Block $target
+	 * @return boolean
+	 */
+	public function canAttachTo(Block $target){
+		$id = $target->getID();
+		return static::attachesTo($id);
 	}
 }

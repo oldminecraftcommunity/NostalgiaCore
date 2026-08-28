@@ -7,7 +7,7 @@ class PMF{
 	protected $fp;
 	protected $file;
 	private $version;
-	private $type;
+	protected $type;
 
 	public function __construct($file, $new = false, $type = 0, $version = PMF_CURRENT_VERSION){
 		if($new === true){
@@ -74,7 +74,8 @@ class PMF{
 
 	public function parseInfo(){
 		$this->seek(0);
-		if(fread($this->fp, 3) !== "PMF"){
+		$type = fread($this->fp, 3);
+		if($type !== "PMF"){
 			return false;
 		}
 		$this->version = ord($this->read(1));
