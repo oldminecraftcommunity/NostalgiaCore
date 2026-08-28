@@ -3384,7 +3384,38 @@ class Player{
 			}
 			return;
 		}
-		
+
+		foreach($this->craftingItems as $i => $slotz){
+			$id = $i >> 16;
+			$meta = $i & 0xffff;
+			foreach($slotz as $slot => $count){
+				$slt = $this->getSlot($slot);
+				if($slt->getID() !== $id || $slt->getMetadata() !== $meta || $slt->count < $count){
+					ConsoleAPI::warn("Craft aborted: claimed ingredient {$id}:{$meta} x{$count} not present in slot {$slot}");
+					$this->toCraft = [];
+					$this->craftingItems = [];
+					return false;
+				}
+			}
+		}
+
+		foreach($this->toCraft as $i => $slotz){
+			$id = $i >> 16;
+			$meta = $i & 0xffff;
+			foreach($slotz as $slot => $count){
+				if($slot < 0) continue;
+				$slt = $this->getSlot($slot);
+				$max = BlockAPI::getItem($id, $meta, 1)->getMaxStackSize();
+				$have = ($slt->getID() === $id && $slt->getMetadata() === $meta) ? $slt->count : 0;
+				if($have + $count > $max){
+					ConsoleAPI::warn("Craft aborted: output {$id}:{$meta} x{$count} does not fit slot {$slot}");
+					$this->toCraft = [];
+					$this->craftingItems = [];
+					return false;
+				}
+			}
+		}
+
 		if($this->server->api->dhandle("player.craft", ["player" => $this, "ingridients" => $this->craftingItems, "results" => $this->toCraft, "type" => $this->craftingType]) === false){
 			$this->toCraft = [];
 			$this->craftingItems = [];
