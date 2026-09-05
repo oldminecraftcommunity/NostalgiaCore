@@ -32,7 +32,7 @@ Supported MCPI & MCPE versions: 0.3.0 ～ 0.8.1 (maybe 0.8.2)
 
 <h3> Download Stable NostalgiaCore</h3>
 
-https://github.com/kotyaralih/NostalgiaCore/releases/
+https://github.com/oldminecraftcommunity/NostalgiaCore/releases/
 
 <h3> PHP binaries download</h3>
 

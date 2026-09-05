@@ -81,7 +81,7 @@ class Explosion{
 						
 						if($entity->isPlayer()){
 							$pk = new SetEntityMotionPacket();
-							$pk->eid = 0; //XXX change
+							$pk->eid = $entity->eid; //XXX change
 							$pk->speedX = $entity->speedX;
 							$pk->speedY = $entity->speedY;
 							$pk->speedZ = $entity->speedZ;
@@ -168,7 +168,7 @@ class Explosion{
 					
 					if($entity->isPlayer()){
 						$pk = new SetEntityMotionPacket();
-						$pk->eid = 0; //XXX change
+						$pk->eid = $entity->eid; //XXX change
 						$pk->speedX = $entity->speedX;
 						$pk->speedY = $entity->speedY;
 						$pk->speedZ = $entity->speedZ;
