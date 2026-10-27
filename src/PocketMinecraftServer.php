@@ -5,7 +5,8 @@ class PocketMinecraftServer{
 	const TICK_F20TPS = 1;
 	const TICK_NETWAIT = 2;
 	public $tCnt, $ticks;
-	public $extraprops, $serverID, $interface, $database, $version, $invisible, $tickMeasure, $preparedSQL, $seed, $gamemode, $name, $maxClients, $eidCnt, $custom, $description, $motd, $port, $saveEnabled;
+	public $extraprops, $serverID, $interface, $database, $version, $invisible, $tickMeasure, $preparedSQL, $seed, $gamemode, $name, $maxClients, $eidCnt, $description, $motd, $port, $saveEnabled;
+	public $custom, $customLastTime = [];
 	/**
 	 * @var ServerAPI
 	 */
@@ -627,7 +628,8 @@ class PocketMinecraftServer{
 					$pk->ip = $packet->ip;
 					$pk->port = $packet->port;
 					$this->send($pk);
-					$this->custom["times_" . $CID] = ($this->custom["times_" . $CID] + 1) % strlen($this->description);
+					$this->custom["times_$CID"] = ($this->custom["times_$CID"] + 1) % strlen($this->description);
+					$this->customLastTime[$CID] = microtime(true);
 					break;
 				case RakNetInfo::OPEN_CONNECTION_REQUEST_1:
 					if($packet->structure !== RakNetInfo::STRUCTURE){
@@ -677,6 +679,14 @@ class PocketMinecraftServer{
 	public function tick(){
 		$time = microtime(true);
 		if($this->lastTick <= ($time - 0.05)){
+			foreach($this->customLastTime as $CID => $lastTime){
+				//server is removed from the list every 3 seconds(will also add a tiny 1 second delay so it will def not be updated incorrectly <3)
+				if(($time - $lastTime) > 4){
+					unset($this->custom["times_$CID"]);
+					unset($this->customLastTime[$CID]);
+				}
+			}
+			
 			$this->tickMeasure[] = $this->lastTick = $time;
 			unset($this->tickMeasure[key($this->tickMeasure)]);
 			++$this->ticks;
