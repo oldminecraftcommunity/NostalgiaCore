@@ -69,7 +69,7 @@ class RakNetParser{
 						$offset += 3;
 						$end = Utils::readTriad(strrev(substr($buffer, $offset - 3, 3)));
 						$acks += ($end - $start)+1;
-						if($maxACKAllowed >= 0 && ($maxACKAllowed - $acks) < 0){
+						if($acks <= 0 || $maxACKAllowed >= 0 && ($maxACKAllowed - $acks) < 0){
 							$packet = false;
 							break;
 						}
