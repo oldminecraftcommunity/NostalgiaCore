@@ -222,7 +222,7 @@ class Player{
 		$this->chatMessagesQueue = new RakNetPacket(RakNetInfo::DATA_PACKET_0);
 		$this->chatMessagesQueue->data = [];
 		
-		//$this->server->schedule(20 * 60, [$this, "clearQueue"], [], true);
+		$this->server->schedule(20 * 60, [$this, "clearQueue"], [], true);
 		$this->server->interface->maxACKsAllowed["{$this->ip}:{$this->port}"] = 0;
 		$this->evid[] = $this->server->event("server.close", [$this, "close"]);
 		console("[DEBUG] New Session started with $ip:$port. MTU {$this->MTU}, Client ID {$this->clientID}", true, true, 2);
