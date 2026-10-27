@@ -2,7 +2,10 @@
 
 class UDPSocket{
 
-	public $connected, $sock, $server, $port;
+	public $connected; 
+	public $sock;
+	public $server;
+	public $port;
 	function __construct($server, $port, $listen = false, $serverip = "0.0.0.0"){
 		$this->server = $server;
 		$this->port = $port;
