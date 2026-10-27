@@ -36,7 +36,7 @@ if [ "$POCKETMINE_FILE" == "" ]; then
 		POCKETMINE_FILE="./PocketMine-MP.php"
 	else
 		echo​ ​"​PocketMine-MP.php not found​" 
- ​ echo​ ​"​Downloads can be found at https://github.com/kotyaralih/NostalgiaCore"
+ ​ echo​ ​"​Downloads can be found at https://github.com/oldminecraftcommunity/NostalgiaCore"
 		exit 1
 	fi
 fi
