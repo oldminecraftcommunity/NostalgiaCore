@@ -22,6 +22,62 @@ class NBT{
 		$this->binary .= $bin;
 	}
 
+	/**
+	 * A function to safely load sign nbt
+	 * @param string $str raw nbt data
+	 * @return false|array array with sign data, false if failed
+	 */
+	public function loadSignNBT($str){
+		$this->offset = 0;
+		$this->binary = (string) $str;
+		//sign nbt in vanilla is
+		/*
+		 * [
+		 * 	"id": "Sign",
+		 * 	"x": <int>,
+		 * 	"y": <int>,
+		 * 	"z": <int>,
+		 * 	"Text1": <string>, //max 15 chars
+		 * 	"Text2": <string>, //^
+		 * 	"Text3": <string>, //^
+		 * 	"Text4": <string>  //^
+		 * ]
+		 */
+		$tag = ord($this->read(1));
+		if($tag == self::TAG_COMPOUND){
+			$name = $this->readTAG_STRING_maxlen(2);
+			if($name != "") return false;
+			$value = [];
+			for($n = 0; $n < 8; ++$n){
+				$tag = ord($this->read(1));
+				if($tag == self::TAG_END){
+					break;
+				}else if($tag == self::TAG_INT){
+					$name = $this->readTAG_STRING_maxlen(1);
+					if($name != "x" && $name != "y" && $name != "z") return false;
+					$value[$name] = $this->readTAG_INT();
+				}else if($tag == self::TAG_STRING){
+					$name = $this->readTAG_STRING_maxlen(5);
+					if($name == "id"){
+						$s = $this->readTAG_STRING_maxlen(4);
+						if($s != "Sign") return false;
+						$value[$name] = $s;
+					}else if($name == "Text1" || $name == "Text2" || $name == "Text3" || $name == "Text4"){
+						$value[$name] = $this->readTAG_STRING_maxlen(15*4); //mcpe 0.8.1 supports unicode, so the max char size 4 bytes
+					}else{
+						return false;
+					}
+				}else{
+					return false;
+				}
+			}
+			if(count($value) != 8) return false;
+			return $value;
+		}else{
+			return false;
+		}
+	}
+	
 	public function load($str){
 		$this->offset = 0;
 		$this->binary = (string) $str;
@@ -66,7 +122,7 @@ class NBT{
 					break;
 				default:
 					echo bin2hex(substr($this->binary, $this->offset - 1)) . PHP_EOL . PHP_EOL;
-					die("Invalid NBT Tag $tag");
+					throw new NBTException("Invalid NBT Tag $tag");
 			}
 			$node[$name] = $value;
 		}
@@ -83,7 +139,14 @@ class NBT{
 	private function feof(){
 		return !isset($this->binary[$this->offset]);
 	}
-
+	
+	//i guess i could have modified old method?
+	//*but it will make it slower </3*
+	//*the nbt needs to be completely rewritten anyway this is barely usable </3*
+	public function readTAG_STRING_maxlen($ml){
+		$len = Utils::readLShort($this->read(2), false);
+		return $this->read($len <= $ml ? $len : $ml);
+	}
 	public function readTAG_STRING(){
 		return $this->read(Utils::readLShort($this->read(2), false));
 	}

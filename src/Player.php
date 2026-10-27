@@ -3275,23 +3275,27 @@ class Player{
 						$t->spawn($this);
 					}else{
 						$nbt = new NBT();
-						$nbt->load($packet->namedtag);
-						$d = array_shift($nbt->tree);
-						if($d["id"] !== TILE_SIGN){
+						$d = $nbt->loadSignNBT($packet->namedtag);
+						if($d === false){
 							$t->spawn($this);
 						}else{
-							
 							$t->setText($d["Text1"], $d["Text2"], $d["Text3"], $d["Text4"]);
 						}
 					}
 				}
 				break;
 			case ProtocolInfo::SET_ENTITY_LINK_PACKET:
+				if($this->spawned === false){
+					break;
+				}
 				if($this->entity->riding != 0){
 					$this->entity->setRiding(null);
 				}
 				break;
 			case ProtocolInfo::PLAYER_INPUT_PACKET:
+				if($this->spawned === false){
+					break;
+				}
 				$this->isJumping = $packet->isJumping;
 				$this->isSneaking = $packet->isSneaking;
 				$this->entity->moveForward = $packet->moveForward;
