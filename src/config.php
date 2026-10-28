@@ -1,6 +1,5 @@
 <?php
 //do not use any modern php features in this file
-$errors = 0;
 
 if(version_compare("8.0.0", PHP_VERSION) > 0){
 	echo "[ERROR] Use PHP >= 8.0.0 to launch this server software.\n";

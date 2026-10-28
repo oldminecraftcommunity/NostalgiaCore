@@ -14,6 +14,10 @@ class BaseMushroomBlock extends FlowableBlock{
 			$level->fastSetBlockUpdate($x, $y, $z, 0, 0);
 		}
 	}
+	
+	public static function canSurvive(Level $level, $x, $y, $z){
+		return $level->getRawBrightness($x, $y, $z) <= 12 && StaticBlock::getIsSolid($level->level->getBlockID($x, $y-1, $z));
+	}
 
 	public static function onRandomTick(Level $level, $x, $y, $z){
 		if(Block::$mushroomSpread && mt_rand(0, 24) == 0){
@@ -46,11 +50,11 @@ class BaseMushroomBlock extends FlowableBlock{
 	}
 	
 	public function place(Item $item, Player $player, Block $block, Block $target, $face, $fx, $fy, $fz){
-		$down = $this->getSide(0);
-		if($down->isTransparent === false){
-			$this->level->setBlock($block, $this, true, false, true);
-			return true;
+		if($block->getID() == 0 || $block->material->replaceable){ //Tile::mayPlace
+			if(static::canSurvive($block->level, $block->x, $block->y, $block->z)){
+				$this->level->setBlock($block, $this, true, false, true);
+				return true;
+			}
 		}
-		return false;
 	}
 }

@@ -36,6 +36,7 @@ define("TILE_CHEST", "Chest");
 	define("CHEST_SLOTS", 27);
 define("TILE_FURNACE", "Furnace");
 	define("FURNACE_SLOTS", 3);
+define("TILE_NETHER_REACTOR", "NetherReactor");
 
 const CORRECT_ENTITY_CLASSES = [
 	ENTITY_PLAYER => true,

@@ -3,6 +3,9 @@
 class TileAPI{
 
 	private $server;
+	/**
+	 * @var Tile[]
+	 */
 	private $tiles;
 	private $tCnt = 1;
 
@@ -10,41 +13,32 @@ class TileAPI{
 		$this->tiles = [];
 		$this->server = ServerAPI::request();
 	}
-	public function getXYZ(Level $level, $x, $y, $z){
-		$tile = $this->server->query("SELECT * FROM tiles WHERE level = '{$level->getName()}' AND x = $x AND y = $y AND z = $z;", true);
-		if($tile !== false and $tile !== true and ($tile = $this->getByID($tile["ID"])) !== false){
-			return $tile;
+	public function getXYZ(Level $level, int $x, int $y, int $z){
+		$cX = ($x >> 4);
+		$cZ = ($z >> 4);
+		foreach($level->tileEntityListPositioned["$cX $cZ"] ?? [] as $tile){
+			if($tile->x == $x && $tile->y == $y && $tile->z == $z) return $tile;
 		}
 		return false;
 	}
 	
-	public function invalidateAll(Level $level, $x, $y, $z){
-		$x = (int) $x;
-		$y = (int) $y;
-		$z = (int) $z;
-		$tile = $this->server->query("SELECT id FROM tiles WHERE level = '{$level->getName()}' AND x = $x AND y = $y AND z = $z;", false);
+	public function invalidateAll(Level $level, int $x, int $y, int $z){
+		$cX = ($x >> 4);
+		$cZ = ($z >> 4);
 		$invcnt = 0;
-		if($tile instanceof SQLite3Result){
-			while(($t = $tile->fetchArray(SQLITE3_ASSOC)) !== false){
-				$tl = $this->getByID($t["ID"]);
-				if($tl instanceof Tile){
-					++$invcnt;
-					$tl->close();
-				}
-				
-				if($invcnt > 1){
-					ConsoleAPI::warn("{$level->getName()}: ($x $y $z) has more than 1 tile entity! Invalidated ID {$t["ID"]} (Total invaliated: $invcnt)");
-				}
+		foreach($level->tileEntityListPositioned["$cX $cZ"] ?? [] as $tile){
+			if($tile->x == $x && $tile->y == $y && $tile->z == $z){
+				++$invcnt;
+				$tile->close();
+			}
+			if($invcnt > 1){
+				ConsoleAPI::warn("{$level->getName()}: ($x $y $z) has more than 1 tile entity! Invalidated ID {$tile->id} (Total invaliated: $invcnt)");
 			}
 		}
 	}
 	
 	public function get(Position $pos){
-		$tile = $this->server->query("SELECT * FROM tiles WHERE level = '" . $pos->level->getName() . "' AND x = {$pos->x} AND y = {$pos->y} AND z = {$pos->z};", true);
-		if($tile !== false and $tile !== true and ($tile = $this->getByID($tile["ID"])) !== false){
-			return $tile;
-		}
-		return false;
+		return $this->getXYZ($pos->level, $pos->x, $pos->y, $pos->z);
 	}
 
 	public function getByID($id){
@@ -75,7 +69,13 @@ class TileAPI{
 
 	public function add(Level $level, $class, $x, $y, $z, $data = []){
 		$id = $this->tCnt++;
-		$this->tiles[$id] = new Tile($level, $id, $class, $x, $y, $z, $data);
+		$clz = Tile::$tileId2tileClass[$class] ?? "Tile";
+		$this->tiles[$id] = $t = new $clz($level, $id, $class, $x, $y, $z, $data);
+		$cX = floor($t->x) >> 4;
+		$cZ = floor($t->z) >> 4;
+		$t->level->tileEntityList[$id] = $t;
+		$t->level->tileEntityListPositioned["$cX $cZ"][$id] = $t;
+		
 		$this->spawnToAll($this->tiles[$id]);
 		return $this->tiles[$id];
 	}
@@ -96,17 +96,7 @@ class TileAPI{
 
 	public function getAll($level = null){
 		if($level instanceof Level){
-			$tiles = [];
-			$l = $this->server->query("SELECT ID FROM tiles WHERE level = '" . $level->getName() . "';");
-			if($l !== false and $l !== true){
-				while(($t = $l->fetchArray(SQLITE3_ASSOC)) !== false){
-					$t = $this->getByID($t["ID"]);
-					if($t instanceof Tile){
-						$tiles[$t->id] = $t;
-					}
-				}
-			}
-			return $tiles;
+			return $level->tileEntityList;
 		}
 		return $this->tiles;
 	}
@@ -116,9 +106,14 @@ class TileAPI{
 			$t = $this->tiles[$id];
 			$this->tiles[$id] = null;
 			unset($this->tiles[$id]);
+			if($t->level instanceof Level){
+				$cX = floor($t->x >> 4);
+				$cZ = floor($t->z >> 4);
+				unset($t->level->tileEntityList[$id]);
+				unset($t->level->tileEntityListPositioned["$cX $cZ"][$id]);
+			}
 			$t->closed = true;
 			$t->close();
-			$this->server->query("DELETE FROM tiles WHERE ID = " . $id . ";");
 			$this->server->api->dhandle("tile.remove", $t);
 			$t = null;
 			unset($t);

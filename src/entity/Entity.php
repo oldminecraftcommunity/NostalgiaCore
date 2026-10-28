@@ -1078,7 +1078,7 @@ class Entity extends Position
 	
 	public function interactWith(Entity $e, $action)
 	{
-		if($this->isPlayer() and ($this->server->api->getProperty("pvp") == false or $this->server->difficulty <= 0 or ($this->player->gamemode & 0x01) === 0x01)){
+		if($this->isPlayer() and ($this->level->getProperty("pvp") == false or $this->server->difficulty <= 0 or ($this->player->gamemode & 0x01) === 0x01)){
 			return false;
 		}
 

@@ -1,13 +1,12 @@
 <?php
 
 class MobSpawner{
-	public static $spawnAnimals = false, $spawnMobs = false, $maxMobsNearPlayerAtOnce = 10;
+	public static $maxMobsNearPlayerAtOnce = 10;
 	private $server;
 	public $level;
 	public $totalMobsPerPlayer;
 	public $playerAffectedEIDS = [];
 	public $entityAffectedPlayers = [];
-	public static $MOB_LIMIT = 50;
 	
 	public function __construct(Level $level){
 		$this->server = ServerAPI::request();
@@ -42,11 +41,13 @@ class MobSpawner{
 	}
 	
 	public function handle(){
-		if($this->countEntities() > self::$MOB_LIMIT || count($this->level->players) <= 0){
+		$limit = $this->level->getProperty("mobs-amount");
+		
+		if($this->countEntities() > $limit || count($this->level->players) <= 0){
 			return false; //not spawning
 		}
 		$svd = $this->totalMobsPerPlayer;
-		$this->totalMobsPerPlayer = min(ceil(self::$MOB_LIMIT / count($this->level->players)), self::$maxMobsNearPlayerAtOnce);
+		$this->totalMobsPerPlayer = min(ceil($limit / count($this->level->players)), self::$maxMobsNearPlayerAtOnce);
 		if($svd != $this->totalMobsPerPlayer) ConsoleAPI::debug("Changed total mobs per player from $svd to {$this->totalMobsPerPlayer}.");
 		
 		return $this->spawnMobs();
@@ -54,11 +55,11 @@ class MobSpawner{
 
 	public function spawnMobs(){
 		$phase = $this->server->api->time->getPhase($this->level);
-		if(self::$spawnAnimals && ($phase == "day" || $phase == "sunrise")){ //Animal
+		if($this->level->getProperty("spawn-animals") && ($phase == "day" || $phase == "sunrise")){ //Animal
 			$type = mt_rand(10, 13);
 			$baby = false;
 			$grassOnly = true;
-		}elseif(self::$spawnMobs && ($phase == "night" || $phase == "sunset") && $this->server->difficulty > 0){ //Monster, true night
+		}elseif($this->level->getProperty("spawn-monsters") && ($phase == "night" || $phase == "sunset") && $this->server->difficulty > 0){ //Monster, true night
 			$type = mt_rand(32, 35);
 			$grassOnly = false;
 			$baby = 2;
@@ -145,5 +146,15 @@ class MobSpawner{
 		
 		return empty($allowed) ? -1 : $allowed[mt_rand(0, count($allowed) - 1)];
 	}
+	/**
+	 * @deprecated
+	 * use $level->getProperty("mobs-amount")
+	 */
+	public static $MOB_LIMIT = 50;
+	/**
+	 * @deprecated
+	 * use $level->getProperty("spawn-animals") and $level->getProperty("spawn-monsters")
+	 */
+	public static $spawnAnimals = true, $spawnMobs = true;
 }
 
