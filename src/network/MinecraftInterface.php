@@ -36,15 +36,27 @@ class MinecraftInterface{
 		ServerAPI::request()->api->dhandle("mcinterface.read", ["buffer" => $buf, "source" => $source, "port" => $port]);
 		return $this->parsePacket($buf, $source, $port);
 	}
-
+	public function clear($ip, $port){
+		$id = "$ip:$port";
+		unset($this->maxACKsAllowed[$id]);
+		unset($this->maxRecordedSeq[$id]);
+		unset($this->maxNACKsAllowed[$id]);
+	}
+	
+	
 	/**
-	 * Stores max ACK packets that the server is allowed to handle.
-	 * 
+	 * Max ACK packets the client is allowed to send
 	 * @var array
 	 */
 	public $maxACKsAllowed = [];
 	/**
-	 * Stores max packet seq number. Used to determine allowed ack increment per packet
+	 * Max NACK packets the client is allowed to send
+	 * @var array
+	 */
+	public $maxNACKsAllowed = [];
+	
+	/**
+	 * Max packet seq number. Used to determine allowed nack cnt increment per packet
 	 * 
 	 * @var array
 	 */
@@ -56,12 +68,18 @@ class MinecraftInterface{
 		if(RakNetInfo::isValid($pid)){
 			$id = "$source:$port";
 			$ackCnt = 0;
+			$nackCnt = 0;
 			$acks = $this->maxACKsAllowed[$id] ?? 0;
-			
-			$packet = RakNetParser::parse($buffer, $acks, $ackCnt);
+			$nacks = $this->maxNACKsAllowed[$id] ?? 0;
+			$packet = RakNetParser::parse($buffer, $acks, $nacks, $ackCnt, $nackCnt); //TODO rewrite this mess later (hai "this code is still horribly ugly, messy, and unmaintainable")
 			if($packet !== false){
-				if($ackCnt != 0 && isset($this->maxACKsAllowed[$id]) && $packet->pid() != RakNetInfo::NACK){
-					$this->maxACKsAllowed[$id] = $acks - $ackCnt;
+				if($ackCnt != 0){
+					$pid = $packet->pid();
+					if($pid == RakNetInfo::ACK && isset($this->maxACKsAllowed[$id])){
+						$this->maxACKsAllowed[$id] = $acks - $ackCnt;
+					}else if($pid == RakNetInfo::NACK && isset($this->maxNACKsAllowed[$id])){
+						$this->maxNACKsAllowed[$id] = $nacks - $ackCnt;
+					}
 				}
 				$packet->ip = $source;
 				$packet->port = $port;
@@ -75,7 +93,12 @@ class MinecraftInterface{
 				$c = $server->clients[$CID] ?? false;
 				if($c !== false){
 					$username = $c->iusername == "" ? $id : $c->iusername;
-					ConsoleAPI::warn("Player '$username' sent too many ACK packets (allowed: {$acks}, attempted {$ackCnt} or more)!");
+					if($nackCnt > 0){
+						ConsoleAPI::warn("Player '$username' sent too many NACK packets (allowed: {$nacks}, attempted {$ackCnt} or more)!");
+					}else{
+						ConsoleAPI::warn("Player '$username' sent too many ACK packets (allowed: {$acks}, attempted {$ackCnt} or more)!");
+					}
+					
 					$c->close("too many ack packets");
 				}else{
 					//ConsoleAPI::warn("$id sent too many ACK packets (allowed: {$acks}, attempted {$ackCnt} or more)!");
@@ -109,21 +132,32 @@ class MinecraftInterface{
 			if($packet->pid() >= RakNetInfo::DATA_PACKET_0 && $packet->pid() <= RakNetInfo::DATA_PACKET_F && $packet->incrementAllowedAck){
 				$id = "{$packet->ip}:{$packet->port}";
 				$seq = $this->maxRecordedSeq[$id] ?? false;
-				$incr = 1;
+				$nackIncr = 0;
 				if($seq === false){
 					$this->maxRecordedSeq[$id] = $packet->seqNumber;
+					$nackIncr = 1;
 				}else{
 					if($packet->seqNumber > $seq){
-						$incr = $packet->seqNumber - $seq;
+						$nackIncr = $packet->seqNumber - $seq;
 						$this->maxRecordedSeq[$id] = $packet->seqNumber;
+					}else{
+						$nackIncr = 0;
 					}
 				}
-				if($incr != 1) console("ack incr: $incr");
+				
+				//seems like real raknet would never attempt to send more than 1000 nack packets per single packet (CCRakNetSlidingWindow::OnGotPacket)
+				//raknet also does something if it received more than 50000 packets?
+				$nackIncr = $nackIncr > 1000 ? 1000 : $nackIncr;
+				if(isset($this->maxNACKsAllowed[$id])){
+					$this->maxNACKsAllowed[$id] += $nackIncr;
+				}else{
+					$this->maxNACKsAllowed[$id] = $nackIncr;
+				}
 				
 				if(isset($this->maxACKsAllowed[$id])){
-					$this->maxACKsAllowed[$id] += $incr;
+					$this->maxACKsAllowed[$id] += 1;
 				}else{
-					$this->maxACKsAllowed[$id] = $incr;
+					$this->maxACKsAllowed[$id] = 1;
 				}
 			}
 		}

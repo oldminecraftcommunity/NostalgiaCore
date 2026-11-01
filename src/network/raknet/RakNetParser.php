@@ -1,13 +1,13 @@
 <?php
 
 class RakNetParser{
-	public static function parse(&$buffer, $maxACKAllowed = -1, &$ackCnt = 0){
+	public static function parse(&$buffer, $maxACKAllowed = -1, $maxNACKsAllowed = -1, &$ackCnt = 0, &$nackCnt = 0){
 		$offset = 0;
 		++$offset;
 		$packet = new RakNetPacket(ord(substr($buffer, $offset - 1, 1)));
 		$packet->buffer = &$buffer;
 		$packet->length = strlen($buffer);
-		switch($packet->pid()){
+		switch($pid = $packet->pid()){
 			case RakNetInfo::UNCONNECTED_PING:
 			case RakNetInfo::UNCONNECTED_PING_OPEN_CONNECTIONS:
 				$offset += 8;
@@ -56,10 +56,15 @@ class RakNetParser{
 				}
 				break;
 			case RakNetInfo::NACK:
+				$maxRangeSize = 1000;
+				$maxACKAllowed = $maxNACKsAllowed;
+				goto handle_ack;
 			case RakNetInfo::ACK:
+				$maxRangeSize = -1;
+				handle_ack:
 				$offset += 2;
 				$count = Utils::readShort(substr($buffer, $offset - 2, 2), false);
-				$packet->packets = [];
+				$packet->packets = new RangeList();
 				$acks = 0;
 				for($i = 0; $i < $count && isset($buffer[$offset]); ++$i){
 					++$offset;
@@ -68,34 +73,36 @@ class RakNetParser{
 						$start = Utils::readTriad(strrev(substr($buffer, $offset - 3, 3)));
 						$offset += 3;
 						$end = Utils::readTriad(strrev(substr($buffer, $offset - 3, 3)));
-						$acks += ($end - $start)+1;
-						if($acks <= 0 || $maxACKAllowed >= 0 && ($maxACKAllowed - $acks) < 0){
+						$range = ($end - $start)+1;
+						if($range <= 0 || ($maxRangeSize >= 0 && $range > $maxRangeSize)){
 							$packet = false;
 							break;
 						}
-						/*if(($end - $start) > 4096){ //not really needed?
-							$end = $start + 4096;
-						}*/
-						for($c = $start; $c <= $end; ++$c){
-							$packet->packets[] = $c;
+						$acks += $range;
+						if($acks <= 0 || ($maxACKAllowed >= 0 && ($maxACKAllowed - $acks) < 0)){
+							$packet = false;
+							break;
 						}
+						
+						$packet->packets->addRange($start, $end);
 					}else{
 						$offset += 3;
 						$acks += 1;
-						if($maxACKAllowed >= 0 && ($maxACKAllowed - $acks) < 0){
+						if(($maxACKAllowed >= 0 && ($maxACKAllowed - $acks) < 0)){
 							$packet = false;
 							break;
 						}
-						$packet->packets[] = Utils::readTriad(strrev(substr($buffer, $offset - 3, 3)));
+						$packet->packets->add(Utils::readTriad(strrev(substr($buffer, $offset - 3, 3))));
 					}
 				}
-				
 				$ackCnt = $acks;
+				if($pid == RakNetInfo::NACK) $nackCnt = $acks;
 				break;
 			default:
 				$packet = false;
 				break;
 		}
+		//console("recv $ackCnt n $nackCnt");
 		return $packet;
 	}
 

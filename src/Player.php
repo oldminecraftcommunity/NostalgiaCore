@@ -488,6 +488,7 @@ class Player{
 		$pk = new RakNetPacket(RakNetInfo::DATA_PACKET_0);
 		$pk->data[] = $packet;
 		$pk->seqNumber = $this->counter[0]++;
+		//$this->counter[0] += 5000;
 		$pk->sendtime = microtime(true);
 		if($recover !== false){
 			$this->recoveryQueue[$pk->seqNumber] = $pk;
@@ -533,18 +534,17 @@ class Player{
 		if(EventHandler::callEvent(new DataPacketSendEvent($this, $packet)) === BaseEvent::DENY) return false;
 		if(!$this->convertToLocalEIDPacket($packet)) return false;
 		
-		$pk = new RakNetPacket(RakNetInfo::DATA_PACKET_0);
-		$pk->data[] = $packet;
-		$pk->seqNumber = $this->counter[0];
-		$pk->sendtime = microtime(true);
-		
 		$packet->encode();
 		$len = strlen($packet->buffer) + 1;
 		$MTU = $this->MTU - 24;
 		if($len > $MTU){
 			return $this->sendBigPacketAlwaysRecover($packet); //TODO fix
 		}
-		++$this->counter[0]; //sendBigPacketAlwaysRecover increments this counter which results in server not sending a seq number
+		
+		$pk = new RakNetPacket(RakNetInfo::DATA_PACKET_0);
+		$pk->data[] = $packet;
+		$pk->seqNumber = $this->counter[0]++;
+		$pk->sendtime = microtime(true);
 		
 		$packet->messageIndex = $this->counter[3]++;
 		$packet->reliability = RakNetInfo::RELIABILITY_RELIABLE;
@@ -1578,8 +1578,13 @@ class Player{
 			}
 		}
 	}
-
+	
 	public function handlePacketQueues(){
+		/*$acks = $this->server->interface->maxACKsAllowed["{$this->ip}:{$this->port}"] ?? 0;
+		$nacks = $this->server->interface->maxNACKsAllowed["{$this->ip}:{$this->port}"] ?? 0;
+		
+		console("acK: {$acks} nack: {$nacks}");*/
+		
 		if($this->server->ticks % 40 == 0){ //2s
 			$this->sendPing();
 		}
@@ -1598,7 +1603,7 @@ class Player{
 			$this->close("timeout");
 			return false;
 		}
-
+		
 		if(($ackCnt = count($this->ackQueue)) > 0){
 			rsort($this->ackQueue);
 			$safeCount = (int) (($this->MTU - 1) / 4);
@@ -1709,7 +1714,7 @@ class Player{
 		}
 		
 		foreach($this->packetAlwaysRecoverQueue as $cnt => $data){
-			$maxDelay = (isset($this->chunkCount[$cnt])) ? 1 : 5;
+			$maxDelay = (isset($this->chunkCount[$cnt])) ? 2 : 5;
 			if($time - $data->sendtime >= $maxDelay){
 				$this->resendQueue[$cnt] = $data;
 			}
@@ -1724,7 +1729,6 @@ class Player{
 				$this->lag[] = $time - $data->sendtime;
 				$data->sendtime = $time;
 				$this->send($data);
-				$data->incrementAllowedAck = true;
 			}
 		}
 	}
@@ -2028,9 +2032,7 @@ class Player{
 	}
 	
 	public function __destruct(){ //pwease dont leak memory >_<
-		$id = "{$this->ip}:{$this->port}";
-		unset($this->server->interface->maxACKsAllowed[$id]);
-		unset($this->server->interface->maxRecordedSeq[$id]);
+		$this->server->interface->clear($this->ip, $this->port);
 	}
 
 	public function save(){
@@ -2104,7 +2106,6 @@ class Player{
 	}
 	
 	public function entityTick(){
-		
 		if($this->isSleeping) ++$this->sleepingTime;
 		if($this->server->difficulty == 0 && $this->entity->counter % (20 * 15) == 0){
 			if($this->entity->health < 20 && $this->entity->health > 0){
@@ -2200,6 +2201,7 @@ class Player{
 					$this->close("Incorrect protocol #" . $packet->protocol1, false);
 					return;
 				}
+				
 				if(preg_match('#[^a-zA-Z0-9_]#', $this->username) > 0 || $this->username === "" || isset(Player::$blacklistedUsernames[$this->iusername]) || strlen($this->iusername) > 16){
 					$this->close("Bad username", false);
 					return;
@@ -3572,41 +3574,44 @@ class Player{
 		return true;
 	}
 
+	public $maxRecvPacketSeq = 0;
 	public function handlePacket(RakNetPacket $packet){
 		if($this->connected === true){
 			$time = microtime(true);
 			$this->timeout = $time + 20;
 			switch($packet->pid()){
 				case RakNetInfo::NACK:
-					foreach($packet->packets as $count){
-						if(isset($this->packetAlwaysRecoverQueue[$count])){
-							$this->resendQueue[$count] = $this->packetAlwaysRecoverQueue[$count];
-							$this->resendQueue[$count]->incrementAllowedAck = false;
-						}else if(isset($this->recoveryQueue[$count])){
-							$this->resendQueue[$count] = $this->recoveryQueue[$count];
-							$this->resendQueue[$count]->incrementAllowedAck = false;
-							$this->lag[] = $time - $this->recoveryQueue[$count]->sendtime;
-							unset($this->recoveryQueue[$count]);
-						}else{ //lost and wont be recovered
-							++$this->packetStats[1];
+					foreach($packet->packets->sequences as $start => $end){
+						for($count = $start; $count <= $end; ++$count){
+							if(isset($this->packetAlwaysRecoverQueue[$count])){
+								$this->resendQueue[$count] = $this->packetAlwaysRecoverQueue[$count];
+							}else if(isset($this->recoveryQueue[$count])){
+								$this->resendQueue[$count] = $this->recoveryQueue[$count];
+								$this->lag[] = $time - $this->recoveryQueue[$count]->sendtime;
+								unset($this->recoveryQueue[$count]);
+							}else{ //lost and wont be recovered
+								++$this->packetStats[1];
+							}
 						}
 					}
 					break;
 
 				case RakNetInfo::ACK:
 					//if(mt_rand(0, 99) > 50) break;
-					foreach($packet->packets as $count){
-						if(isset($this->packetAlwaysRecoverQueue[$count])){
-							$this->lag[] = $time - $this->packetAlwaysRecoverQueue[$count]->sendtime;
-							
+					foreach($packet->packets->sequences as $start => $end){
+						for($count = $start; $count <= $end; ++$count){
+							if(isset($this->packetAlwaysRecoverQueue[$count])){
+								$this->lag[] = $time - $this->packetAlwaysRecoverQueue[$count]->sendtime;
+							}else if(isset($this->recoveryQueue[$count])){
+								$this->lag[] = $time - $this->recoveryQueue[$count]->sendtime;
+							}
+							unset($this->recoveryQueue[$count]);
 							unset($this->packetAlwaysRecoverQueue[$count]);
 							unset($this->chunkCount[$count]);
-						}else if(isset($this->recoveryQueue[$count])){
-							$this->lag[] = $time - $this->recoveryQueue[$count]->sendtime;
-							unset($this->recoveryQueue[$count]);
+							
+							unset($this->resendQueue[$count]);
+							++$this->packetStats[0];
 						}
-						unset($this->resendQueue[$count]);
-						++$this->packetStats[0];
 					}
 					break;
 
@@ -3627,6 +3632,19 @@ class Player{
 				case RakNetInfo::DATA_PACKET_E:
 				case RakNetInfo::DATA_PACKET_F:
 					$this->ackQueue[] = $packet->seqNumber;
+					
+					if($packet->seqNumber > $this->maxRecvPacketSeq){
+						/*
+						TODO send NACKs
+						$diff = $packet->seqNumber - $this->maxRecvPacketSeq;
+						if($diff > 1){
+							console("diff is more than 1, sending nacks");
+							$diff = $diff > 1000 ? 1000 : $diff;
+							$this->nackQueue[$packet->seqNumber] = $packet->seqNumber+$diff;
+						}*/
+						$this->maxRecvPacketSeq = $packet->seqNumber;
+					}
+						
 					$this->receiveQueue[$packet->seqNumber] = [];
 					foreach($packet->data as $pk){
 						$this->receiveQueue[$packet->seqNumber][] = $pk;
