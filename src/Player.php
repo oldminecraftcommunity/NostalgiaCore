@@ -83,8 +83,8 @@ class Player{
 	private $timeout;
 	private $connected = true;
 	private $clientID;
-	private $ip;
-	private $port;
+	public $ip;
+	public $port;
 	private $counter = [0, 0, 0, 0];
 	public $username;
 	public $iusername;
@@ -188,6 +188,9 @@ class Player{
 	 */
 	public function __construct($clientID, $ip, $port, $MTU){
 		$this->bigCnt = 0;
+		//setting it above 1100 may cause issues for players on some servers
+		//(see 236e98be23c7f0d0654ae9af40703e4e4e89516a)
+		//(duplicated here cuz i wanted to remove it)
 		$this->MTU = min($MTU, 1100);
 		$this->server = ServerAPI::request();
 		$this->lastBreak = microtime(true);
@@ -532,7 +535,7 @@ class Player{
 		
 		$pk = new RakNetPacket(RakNetInfo::DATA_PACKET_0);
 		$pk->data[] = $packet;
-		$pk->seqNumber = $this->counter[0]++;
+		$pk->seqNumber = $this->counter[0];
 		$pk->sendtime = microtime(true);
 		
 		$packet->encode();
@@ -541,6 +544,7 @@ class Player{
 		if($len > $MTU){
 			return $this->sendBigPacketAlwaysRecover($packet); //TODO fix
 		}
+		++$this->counter[0]; //sendBigPacketAlwaysRecover increments this counter which results in server not sending a seq number
 		
 		$packet->messageIndex = $this->counter[3]++;
 		$packet->reliability = RakNetInfo::RELIABILITY_RELIABLE;
@@ -1720,6 +1724,7 @@ class Player{
 				$this->lag[] = $time - $data->sendtime;
 				$data->sendtime = $time;
 				$this->send($data);
+				$data->incrementAllowedAck = true;
 			}
 		}
 	}
@@ -2023,7 +2028,9 @@ class Player{
 	}
 	
 	public function __destruct(){ //pwease dont leak memory >_<
-		unset($this->server->interface->maxACKsAllowed["{$this->ip}:{$this->port}"]);
+		$id = "{$this->ip}:{$this->port}";
+		unset($this->server->interface->maxACKsAllowed[$id]);
+		unset($this->server->interface->maxRecordedSeq[$id]);
 	}
 
 	public function save(){
@@ -3576,7 +3583,7 @@ class Player{
 							$this->resendQueue[$count] = $this->packetAlwaysRecoverQueue[$count];
 							$this->resendQueue[$count]->incrementAllowedAck = false;
 						}else if(isset($this->recoveryQueue[$count])){
-							$this->resendQueue[$count] =& $this->recoveryQueue[$count];
+							$this->resendQueue[$count] = $this->recoveryQueue[$count];
 							$this->resendQueue[$count]->incrementAllowedAck = false;
 							$this->lag[] = $time - $this->recoveryQueue[$count]->sendtime;
 							unset($this->recoveryQueue[$count]);

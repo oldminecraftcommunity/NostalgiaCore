@@ -43,6 +43,12 @@ class MinecraftInterface{
 	 * @var array
 	 */
 	public $maxACKsAllowed = [];
+	/**
+	 * Stores max packet seq number. Used to determine allowed ack increment per packet
+	 * 
+	 * @var array
+	 */
+	public $maxRecordedSeq = [];
 	
 	private function parsePacket($buffer, $source, $port){
 		$pid = ord($buffer[0]);
@@ -102,10 +108,22 @@ class MinecraftInterface{
 			RakNetCodec::encode($packet);
 			if($packet->pid() >= RakNetInfo::DATA_PACKET_0 && $packet->pid() <= RakNetInfo::DATA_PACKET_F && $packet->incrementAllowedAck){
 				$id = "{$packet->ip}:{$packet->port}";
-				if(isset($this->maxACKsAllowed[$id])){
-					++$this->maxACKsAllowed[$id];
+				$seq = $this->maxRecordedSeq[$id] ?? false;
+				$incr = 1;
+				if($seq === false){
+					$this->maxRecordedSeq[$id] = $packet->seqNumber;
 				}else{
-					$this->maxACKsAllowed[$id] = 1;
+					if($packet->seqNumber > $seq){
+						$incr = $packet->seqNumber - $seq;
+						$this->maxRecordedSeq[$id] = $packet->seqNumber;
+					}
+				}
+				if($incr != 1) console("ack incr: $incr");
+				
+				if(isset($this->maxACKsAllowed[$id])){
+					$this->maxACKsAllowed[$id] += $incr;
+				}else{
+					$this->maxACKsAllowed[$id] = $incr;
 				}
 			}
 		}
