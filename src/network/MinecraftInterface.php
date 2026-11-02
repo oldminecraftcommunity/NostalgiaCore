@@ -42,6 +42,13 @@ class MinecraftInterface{
 		unset($this->maxRecordedSeq[$id]);
 		unset($this->maxNACKsAllowed[$id]);
 	}
+	public function init($ip, $port){
+		$id = "$ip:$port";
+		$this->maxACKsAllowed[$id] = 0;
+		unset($this->maxRecordedSeq[$id]);
+		$this->maxNACKsAllowed[$id] = 0;
+	}
+	
 	
 	
 	/**
