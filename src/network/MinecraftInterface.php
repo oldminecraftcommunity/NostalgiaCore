@@ -1,7 +1,7 @@
 <?php
 
 class MinecraftInterface{
-
+	public static $LIMIT_ACKS = true;
 	public $bandwidth;
 	private $socket;
 	private $packets;
@@ -78,9 +78,10 @@ class MinecraftInterface{
 			$nackCnt = 0;
 			$acks = $this->maxACKsAllowed[$id] ?? 0;
 			$nacks = $this->maxNACKsAllowed[$id] ?? 0;
+			if(!static::$LIMIT_ACKS) $acks = $nacks = -1;
 			$packet = RakNetParser::parse($buffer, $acks, $nacks, $ackCnt, $nackCnt); //TODO rewrite this mess later (hai "this code is still horribly ugly, messy, and unmaintainable")
 			if($packet !== false){
-				if($ackCnt != 0){
+				if(static::$LIMIT_ACKS && $ackCnt != 0){
 					$pid = $packet->pid();
 					if($pid == RakNetInfo::ACK && isset($this->maxACKsAllowed[$id])){
 						$this->maxACKsAllowed[$id] = $acks - $ackCnt;
@@ -94,7 +95,7 @@ class MinecraftInterface{
 					return false;
 				}
 				return $packet;
-			}else if($ackCnt > 0){
+			}else if(static::$LIMIT_ACKS && $ackCnt > 0){
 				$CID = PocketMinecraftServer::clientID($source, $port);
 				$server = ServerAPI::request();
 				$c = $server->clients[$CID] ?? false;

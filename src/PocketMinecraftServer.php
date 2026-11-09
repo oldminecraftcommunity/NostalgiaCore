@@ -109,6 +109,7 @@ class PocketMinecraftServer{
 			"allow-dropping-single-items" => Player::$allowDroppingSingleItems,
 			"enable-light-updates" => self::$ENABLE_LIGHT_UPDATES,
 			"min-block-breaking-progress" => self::$BLOCK_BREAKING_PROGRESS,
+			"limit-ack-packets" => MinecraftInterface::$LIMIT_ACKS,
 		], comments: [
 			"min-block-breaking-progress" => [
 				"Affects how strict block breaking speed check is.",
@@ -141,6 +142,10 @@ class PocketMinecraftServer{
 			],
 			"keep-chunks-loaded" => [
 				"If disabled chunks won't be loaded into memory until the player(or something else) loads them"
+			],
+			"limit-ack-packets" => [
+				"Prevents players from sending too many ACK/NACK packets if enabled",
+				"Disabling this settings may result in server getting crashed/frozen if someone sends ack packet with a lot of sequences"
 			]
 		]);
 		self::$BLOCK_BREAKING_PROGRESS = $this->extraprops->get("min-block-breaking-progress");
@@ -152,12 +157,13 @@ class PocketMinecraftServer{
 		Living::$despawnMobs = $this->extraprops->get("despawn-mobs");
 		Living::$despawnTimer = $this->extraprops->get("mob-despawn-ticks");
 		Living::$entityPushing = $this->extraprops->get("enable-mob-pushing");
-		
 		self::$KEEP_CHUNKS_LOADED = $this->extraprops->get("keep-chunks-loaded");
 		self::$ENABLE_LIGHT_UPDATES = $this->extraprops->get("enable-light-updates");
 		PocketMinecraftServer::$SAVE_PLAYER_DATA = $this->extraprops->get("save-player-data");
 		Explosion::$enableExplosions = $this->extraprops->get("enable-explosions");
 		NetherReactorBlock::$enableReactor = $this->extraprops->get("enable-nether-reactor");
+		MinecraftInterface::$LIMIT_ACKS = $this->extraprops->get("limit-ack-packets");
+		
 		if(self::$TICKING_MODE == self::TICK_F20TPS){
 			ConsoleAPI::warn("Forcing 20 tps. This may result in higher CPU usage!");
 		}
@@ -166,6 +172,9 @@ class PocketMinecraftServer{
 		}
 		if(!self::$ENABLE_LIGHT_UPDATES){
 			ConsoleAPI::warn("Light updates are disabled: this should decrease memory consumption and increase performance, but will prevent all existing light from updating and disable some light-dependant features.");
+		}
+		if(!MinecraftInterface::$LIMIT_ACKS){
+			ConsoleAPI::warn("ACK packet limit is disabled: server can be frozen or crashed using bad ACK packets!");
 		}
 		if($this->extraprops->get("discord-msg")){
 			if($this->extraprops->get("discord-webhook-url") !== "none"){
