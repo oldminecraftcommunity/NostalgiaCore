@@ -25,8 +25,8 @@ class AddMobPacket extends RakNetDataPacket{
 		$this->putFloat($this->x);
 		$this->putFloat($this->y);
 		$this->putFloat($this->z);
-		$this->putByte($this->yaw);
-		$this->putByte($this->pitch);
+		$this->putByte(Utils::rotDegreesToChar($this->yaw));
+		$this->putByte(Utils::rotDegreesToChar($this->pitch));
 		$this->put(Utils::writeMetadata($this->metadata));
 	}
 	

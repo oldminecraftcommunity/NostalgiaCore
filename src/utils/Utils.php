@@ -457,6 +457,17 @@ class Utils{
 		return substr(pack("N", $value), 1);
 	}
 
+	public static function rotDegreesToChar(float $deg) : int{
+		$v = ((int)(($deg / 360.0) * 256.0)) & 0xFF;
+		return $v >= 128 ? $v - 256 : $v;
+	}
+
+	public static function rotCharToDegrees(int $char) : float{
+		$char = $char & 0xFF;
+		if($char >= 128) $char -= 256;
+		return $char * 360.0 / 256.0;
+	}
+
 	public static function getRandomBytes($length = 16, $secure = true, $raw = true, $startEntropy = "", &$rounds = 0, &$drop = 0){
 		return $raw ? random_bytes($length) : bin2hex(random_bytes($length)); //nobody would ever notice other parameters
 	}
