@@ -1,6 +1,7 @@
 <?php
 /**
- * Small class to hopefully optimize entities a bit
+ * A class that allows to get block properties without having to create a block instance.
+ * Should be used whenever is possible.
  */
 class StaticBlock
 {
@@ -9,6 +10,8 @@ class StaticBlock
 	
 	private static $NULL_BOUNDS;
 	public static $prealloc = [];
+	
+	//default pmmp block props
 	public static $isSolid = [];
 	public static $isTransparent = [];
 	public static $isFlowable = [];
@@ -17,6 +20,10 @@ class StaticBlock
 	public static $hasPhysics = [];
 	public static $isLiquid = [];
 	public static $isFullBlock = [];
+	
+	public static $vIsSolid = []; //vanilla solid
+	public static $isCubeShaped = [];
+	
 	public static $material = [];
 	public static $hardness = [];
 	public static $destroyTime = [];
@@ -28,10 +35,18 @@ class StaticBlock
 	
 	public static function init(){
 		self::$NULL_BOUNDS = new AxisAlignedBB(0, 0, 0, 0, 0, 0);
-		for($i = 0; $i < 256; ++$i) self::$lightBlock[$i] = self::$lightEmission[$i] = 0;
+		for($i = 0; $i < 256; ++$i) {
+			self::$lightBlock[$i] = self::$lightEmission[$i] = 0;
+		}
+		
 		foreach(Block::$class as $nonstaticname){
 			/**@var Block $b*/
 			$b = new $nonstaticname();
+
+			//TODO merge vIsSolid and isSolid later?
+			//TODO dont use arrays
+			self::$vIsSolid[$b->getID()] = in_array($b->getID(), [1,2,3,4,5,7,12,13,14,15,16,17,19,21,22,24,35,41,42,43,45,46,47,48,49,56,57,58,61,62,73,74,79,80,82,86,87,89,91,95,98,103,112,155,157,170,173,245,246,247,248,249,255]);
+			self::$isCubeShaped[$b->getID()] = in_array($b->getID(), [1,2,3,4,5,7,12,13,14,15,16,17,18,19,20,21,22,24,35,41,42,43,45,46,47,48,49,56,57,58,61,62,73,74,79,80,82,86,87,89,91,95,98,103,112,155,157,170,173,245,246,247,248,249,255]);
 			
 			self::$isSolid[$b->getID()] = $b->isSolid;
 			self::$isTransparent[$b->getID()] = $b->isTransparent;
@@ -53,6 +68,7 @@ class StaticBlock
 			FireBlock::setFlammabilityAndCatchingChance($b->getID(), 0, 0);
 			self::setBlockBounds($b->getID(), 0, 0, 0, 1, 1, 1);
 		}
+		
 		
 		self::setBlockBounds(BED_BLOCK, 0, 0, 0, 1, 0.5625, 1);
 		//Cake: has bounds based on world state
@@ -152,8 +168,15 @@ class StaticBlock
 		return self::$slipperiness[$id] ?? StaticBlock::DEFAULT_SLIPPERINESS;
 	}
 	
+	public static function getIsVSolid($id){
+		return self::$vIsSolid[$id] ?? false;
+	}
 	public static function getIsSolid($id){
 		return self::$isSolid[$id] ?? false;
+	}
+	
+	public static function getIsCubeShaped($id){
+		return self::$isCubeShaped[$id] ?? false;
 	}
 	
 	public static function getIsTransparent($id){

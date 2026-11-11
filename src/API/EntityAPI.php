@@ -7,13 +7,9 @@ class EntityAPI{
 	public $entities;
 	private $server;
 	private $eCnt = 1;
-	private $serverSpawnAnimals, $serverSpawnMobs;
 	function __construct(){
 		$this->entities = [];
 		$this->server = ServerAPI::request();
-		
-		$this->serverSpawnAnimals = $this->server->api->getProperty("spawn-animals");
-		$this->serverSpawnMobs = $this->server->api->getProperty("spawn-mobs");
 	}
 	
 	public function init(){
@@ -194,8 +190,8 @@ class EntityAPI{
 	public function addRaw(Entity $e){
 		$eid = $e->eid;
 		$this->entities[$eid] = $e;
-		$cX = (int)$this->entities[$eid]->x >> 4;
-		$cZ = (int)$this->entities[$eid]->z >> 4;
+		$cX = floor($this->entities[$eid]->x >> 4);
+		$cZ = floor($this->entities[$eid]->z >> 4);
 		$e->level->entityListPositioned["$cX $cZ"][$eid] = $eid;
 		$e->level->entityList[$eid] = &$this->entities[$eid];
 		$this->server->handle("entity.add", $this->entities[$eid]);

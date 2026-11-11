@@ -8,6 +8,7 @@ class StoneBlock extends SolidBlock{
 		$this->breakTime = 1.5;
 		$this->material = Material::$stone;
 		$this->lightBlock = 255;
+		$this->vIsSolid = true;
 	}
 
 	public function getBreakTime(Item $item, Player $player){

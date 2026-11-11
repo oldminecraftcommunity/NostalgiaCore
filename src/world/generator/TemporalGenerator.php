@@ -58,7 +58,8 @@ class TemporalGenerator implements LevelGenerator{
 						for($Y = 0; $Y < 8; ++$Y){
 							$chunk[$Y] .= substr($block, $Y << 4, 16);
 							$chunk[$Y] .= substr($meta, $Y << 3, 8);
-							$chunk[$Y] .= "\x00\x00\x00\x00\x00\x00\x00\x00";
+							$chunk[$Y] .= "\x00\x00\x00\x00\x00\x00\x00\x00"; //blocklight
+							$chunk[$Y] .= "\x00\x00\x00\x00\x00\x00\x00\x00"; //skylight
 						}
 					}
 				}

@@ -36,15 +36,27 @@ class LadderBlock extends TransparentBlock{
 		$this->breakTime = 0.4;
 		$this->material = Material::$decoration;
 	}
+	
+	public function getPlacementDataValue(Level $level, $x, $y, $z, $side){
+		$v = 0; //getLevelDataForAuxValue($item_aux_value); - should be 0
+		if(($v == 0 || $side == 2) && $level->isSolidBlockingTile($x, $y, $z + 1)) $v = 2;
+		if(($v == 0 || $side == 3) && $level->isSolidBlockingTile($x, $y, $z - 1)) $v = 3;
+		if(($v == 0 || $side == 4) && $level->isSolidBlockingTile($x + 1, $y, $z)) $v = 4;
+		if(($v == 0 || $side == 5) && $level->isSolidBlockingTile($x - 1, $y, $z)) $v = 5;
+		return $v; //should never happen due to previous check in ::place
+	}
+	
 	public function place(Item $item, Player $player, Block $block, Block $target, $face, $fx, $fy, $fz){
-		if($face === 0 || $face === 1){
-			return false; //fix of placing invalid ids without array
-		}
-		if($target->isTransparent === false){
-			$this->meta = $face;
+		$x = $block->x;
+		$y = $block->y;
+		$z = $block->z;
+		$level = $block->level;
+		if($level->isSolidBlockingTile($x - 1, $y, $z) || $level->isSolidBlockingTile($x + 1, $y, $z) || $level->isSolidBlockingTile($x, $y, $z - 1) || $level->isSolidBlockingTile($x, $y, $z+1)){
+			$this->meta = static::getPlacementDataValue($level, $x, $y, $z, $face);
 			$this->level->setBlock($block, $this, true, false, true);
 			return true;
 		}
+		
 		return false;
 	}
 

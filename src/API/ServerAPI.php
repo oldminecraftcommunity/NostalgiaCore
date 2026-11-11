@@ -116,18 +116,18 @@ class ServerAPI{
 			"memory-limit" => "128M",
 			"white-list" => false,
 			"announce-player-achievements" => true,
-			"spawn-protection" => 16,
+			//"spawn-protection" => 16,
 			"view-distance" => 10,
 			"max-players" => 20,
 			"allow-flight" => true,
-			"spawn-animals" => true,
-			"spawn-mobs" => true,
-			"mobs-amount" => 50,
+			//"spawn-animals" => true,
+			//"spawn-mobs" => true,
+			//"mobs-amount" => 50,
 			"gamemode" => SURVIVAL,
 			"hardcore" => false,
-			"pvp" => true,
-			"difficulty" => 2,
+			//"pvp" => true,
 			"generator-settings" => "",
+			"difficulty" => 2,
 			"level-name" => "world",
 			"level-seed" => "",
 			"level-type" => "DEFAULT",
@@ -140,7 +140,14 @@ class ServerAPI{
 			"ticking-mode" => "legacy",
 			"mushroom-spread" => Block::$mushroomSpread
 		], comments: [
+			"level-name" => [
+				"Default level name"
+			],
+			"level-seed" => [
+				"Default level seed"
+			],
 			"level-type" => [
+				"Default level type",
 				"Alowed types:",
 				"FLAT - flat world",
 				"DEFAULT - use one of the 4 pregenerated worlds from pocketmine",
@@ -190,7 +197,6 @@ class ServerAPI{
 			ConsoleAPI::warn("Fly checking is enabled! Players may experience issues with kicking while not flying!");
 		}
 		$this->parseProperties();
-		MobSpawner::$MOB_LIMIT = $this->getProperty("mobs-amount", 50);
 		Entity::$allowedAI = $this->getProperty("enable-mob-ai", true);
 		PocketMinecraftServer::$PACKET_READING_LIMIT = $this->getProperty("abort-reading-after-N-packets", PocketMinecraftServer::$PACKET_READING_LIMIT);
 		PocketMinecraftServer::$TICKING_MODE = match(strtolower($this->getProperty("ticking-mode"))){
@@ -202,8 +208,7 @@ class ServerAPI{
 		define("DEBUG", $this->getProperty("debug", 1));
 		define("ADVANCED_CACHE", false);
 		//define("MAX_CHUNK_RATE", 20 / $this->getProperty("max-chunks-per-second", 8)); //Default rate ~512 kB/s
-		MobSpawner::$spawnAnimals = $this->getProperty("spawn-animals");
-		MobSpawner::$spawnMobs = $this->getProperty("spawn-mobs");
+
 		if($this->getProperty("upnp-forwarding")){
 			console("[INFO] [UPnP] Trying to port forward...");
 			UPnP_PortForward($this->getProperty("server-port"));

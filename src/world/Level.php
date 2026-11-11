@@ -7,12 +7,27 @@ class Level{
 	 */
 	public $entities;
 	/**
+	 * @var Config
+	 */
+	public $levelProperties;
+	/**
 	 * This is an array of entities in this world. 
 	 * @var Entity[]
 	 */
 	public $entityList;
-	
+	/**
+	 * An array with all of the tileentities in this world
+	 * @var Tile[]
+	 */
+	public $tileEntityList;
+	/**
+	 * @var Entity[]
+	 */
 	public $entityListPositioned = [];
+	/**
+	 * @var Tile[]
+	 */
+	public $tileEntityListPositioned = [];
 	public $entitiesInLove = [];
 	
 	/**
@@ -27,7 +42,7 @@ class Level{
 	public $queuedBlockUpdates = [];
 	
 	public $forceDisableBlockQueue = false;
-	
+
 	public static $randomUpdateBlocks = [
 		FIRE => true,
 		FARMLAND => true,
@@ -55,6 +70,7 @@ class Level{
 		$this->level = $level;
 		$this->level->level = $this;
 		$this->entityList = [];
+		$this->tileEntityList = [];
 		$this->entities = $entities;
 		$this->tiles = $tiles;
 		$this->blockUpdates = $blockUpdates;
@@ -73,6 +89,35 @@ class Level{
 		$this->randInt2 = 0x3C6EF35F;
 	}
 
+	/**
+	 * Gets level property.
+	 * 
+	 * @param string $name - property name
+	 * @param mixed $fail=false - return value if the property doesn't exist
+	 * @return string|mixed
+	 */
+	public function getProperty(string $name, $fail = false){
+		return $this->levelProperties->exists($name) ? $this->levelProperties->get($name) : $this->server->api->level->getDefaultProperty($name, $fail);
+	}
+	
+	/**
+	 * Sets level property
+	 * 
+	 * @param string $name - property name
+	 * @param mixed $value - new property value
+	 * 
+	 * @return boolean true if sucess, false if failed
+	 */
+	public function setProperty(string $name, $value){
+		$c = $this->server->api->dhandle("level.property.change", ["level" => $this, "name" => $name, "value" => $value]);
+		if($c === false) return false;
+		
+		$this->levelProperties->set($name, $value);
+		$this->levelProperties->save();
+		
+		return true;
+	}
+	
 	public function close(){
 		if(isset($this->level)){
 			$this->save(true, true, true, true);
@@ -485,6 +530,16 @@ class Level{
 		}
 		return $ret;
 	}
+	
+	public function isSolidBlockingTile($x, $y, $z){
+		$id = $this->level->getBlockID($x, $y, $z);
+		if($id != 0 && StaticBlock::getMaterial($id)->isSolidBlocking()){
+			return StaticBlock::getIsCubeShaped($id);
+		}else{
+			return false;
+		}
+	}
+	
 	public function fastSetBlockUpdateMeta($x, $y, $z, $meta, $updateBlock = false){
 		$this->level->setBlockDamage($x, $y, $z, $meta);
 		$id = $this->level->getBlockID($x, $y, $z);
@@ -732,7 +787,7 @@ class Level{
 					$y = ($xyz >> 16) & 0x7f;
 					$cy = $ch[$y >> 4];
 					if($cy === false) continue;
-					$id = ord($cy[($y & 0xf) + ($x << 5) + ($z << 9)]);
+					$id = ord($cy[($y & 0xf) + $x*40 + $z*640]);
 					if(isset(self::$randomUpdateBlocks[$id])){
 						$cl = StaticBlock::$prealloc[$id];
 						$cl::onRandomTick($this, ($cX << 4) + $x, $y, $z + ($cZ << 4));
@@ -1010,7 +1065,7 @@ class Level{
 		for($j = 0; $j < 256; ++$j){
 			$ordered .= $flag;
 			foreach($raw as $mini){
-				$ordered .= substr($mini, $j << 5, 24); //16 + 8
+				$ordered .= substr($mini, $j*40, 24); //16 + 8
 			}
 		}
 		return $ordered;
