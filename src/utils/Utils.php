@@ -458,7 +458,8 @@ class Utils{
 	}
 
 	public static function rotDegreesToChar(float $deg) : int{
-		return ((int)(($deg / 360.0) * 256.0)) & 0xFF;
+		$v = ((int)(($deg / 360.0) * 256.0)) & 0xFF;
+		return $v >= 128 ? $v - 256 : $v;
 	}
 
 	public static function rotCharToDegrees(int $char) : float{
